@@ -244,6 +244,8 @@
             justify-content: center;
             color: white;
             font-weight: bold;
+            background-size: cover;
+            background-position: center;
         }
         
         .preview-username {
@@ -325,18 +327,69 @@
             content: "|";
             animation: blink 1s infinite;
         }
+        
+        /* Anti-inspect styles */
+        #anti-inspect {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            z-index: 9999;
+            color: red;
+            font-size: 32px;
+            text-align: center;
+            padding-top: 20%;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .webhook-list {
+            margin-top: 10px;
+        }
+        
+        .webhook-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .webhook-item input {
+            flex: 1;
+        }
+        
+        .webhook-item button {
+            padding: 5px 10px;
+            margin: 0;
+        }
+        
+        #webhook-container {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
+    <div id="anti-inspect">
+        <h1>You Can't Noob Sucker hahhahaha🤣😂😆</h1>
+        <p>Stop trying to inspect this page!</p>
+    </div>
+    
     <div class="container">
         <h1>Discord Webhook Tool <span class="blink">_</span></h1>
         
         <div class="section">
             <h2>Basic Settings</h2>
             
-            <div class="input-group">
-                <label for="webhook">Webhook URL:</label>
-                <input type="text" id="webhook" placeholder="https://discord.com/api/webhooks/...">
+            <div id="webhook-container" class="input-group">
+                <label>Webhook URLs:</label>
+                <div class="webhook-list" id="webhook-list">
+                    <div class="webhook-item">
+                        <input type="text" class="webhook-url" placeholder="https://discord.com/api/webhooks/...">
+                        <button class="remove-webhook">-</button>
+                    </div>
+                </div>
+                <button id="add-webhook">+ Add Webhook</button>
             </div>
             
             <div class="input-group">
@@ -382,7 +435,22 @@
             
             <div class="checkbox-group">
                 <input type="checkbox" id="random-avatar">
-                <label for="random-avatar">Use random hacker avatar for each message</label>
+                <label for="random-avatar">Use random avatar for each message</label>
+            </div>
+            
+            <div id="avatar-pool-container" class="hidden">
+                <label>Avatar URL Pool (one per line):</label>
+                <div class="random-pool" id="avatar-pool">
+                    <div class="random-pool-item">
+                        <input type="text" placeholder="Avatar URL" value="https://i.imgur.com/J7lY1Z5.png">
+                        <button class="remove-avatar">-</button>
+                    </div>
+                    <div class="random-pool-item">
+                        <input type="text" placeholder="Avatar URL" value="https://i.imgur.com/3Q8TnQm.png">
+                        <button class="remove-avatar">-</button>
+                    </div>
+                </div>
+                <button id="add-avatar">+ Add Avatar URL</button>
             </div>
             
             <div class="input-group">
@@ -428,7 +496,22 @@
                 
                 <div class="checkbox-group">
                     <input type="checkbox" id="random-embed-image">
-                    <label for="random-embed-image">Use random hacker image for embed</label>
+                    <label for="random-embed-image">Use random image for embed</label>
+                </div>
+                
+                <div id="embed-image-pool-container" class="hidden">
+                    <label>Embed Image URL Pool (one per line):</label>
+                    <div class="random-pool" id="embed-image-pool">
+                        <div class="random-pool-item">
+                            <input type="text" placeholder="Image URL" value="https://i.imgur.com/9mQ3Z6j.jpg">
+                            <button class="remove-embed-image">-</button>
+                        </div>
+                        <div class="random-pool-item">
+                            <input type="text" placeholder="Image URL" value="https://i.imgur.com/4T2Xw9L.jpg">
+                            <button class="remove-embed-image">-</button>
+                        </div>
+                    </div>
+                    <button id="add-embed-image">+ Add Image URL</button>
                 </div>
             </div>
         </div>
@@ -527,8 +610,34 @@
     </div>
 
     <script>
+        // Anti-inspect protection
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            showAntiInspect();
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+                (e.ctrlKey && e.shiftKey && e.key === 'J') || 
+                (e.ctrlKey && e.key === 'u')) {
+                e.preventDefault();
+                showAntiInspect();
+            }
+        });
+        
+        function showAntiInspect() {
+            const antiInspect = document.getElementById('anti-inspect');
+            antiInspect.style.display = 'block';
+            
+            setTimeout(() => {
+                antiInspect.style.display = 'none';
+            }, 3000);
+        }
+        
         // DOM Elements
-        const webhookInput = document.getElementById('webhook');
+        const webhookList = document.getElementById('webhook-list');
         const messageInput = document.getElementById('message');
         const usernameInput = document.getElementById('username');
         const avatarInput = document.getElementById('avatar');
@@ -553,6 +662,9 @@
         const usernamePool = document.getElementById('username-pool');
         const addUsernameBtn = document.getElementById('add-username');
         const randomAvatarCheckbox = document.getElementById('random-avatar');
+        const avatarPoolContainer = document.getElementById('avatar-pool-container');
+        const avatarPool = document.getElementById('avatar-pool');
+        const addAvatarBtn = document.getElementById('add-avatar');
         const enableEmbedCheckbox = document.getElementById('enable-embed');
         const embedSettings = document.getElementById('embed-settings');
         const embedTitleInput = document.getElementById('embed-title');
@@ -560,6 +672,9 @@
         const embedColorInput = document.getElementById('embed-color');
         const embedImageInput = document.getElementById('embed-image');
         const randomEmbedImageCheckbox = document.getElementById('random-embed-image');
+        const embedImagePoolContainer = document.getElementById('embed-image-pool-container');
+        const embedImagePool = document.getElementById('embed-image-pool');
+        const addEmbedImageBtn = document.getElementById('add-embed-image');
         const previewContainer = document.getElementById('preview');
         const previewAvatar = document.getElementById('preview-avatar');
         const previewUsername = document.getElementById('preview-username');
@@ -569,28 +684,12 @@
         const previewEmbedDescription = document.getElementById('preview-embed-description');
         const previewEmbedImage = document.getElementById('preview-embed-image');
         const previewFile = document.getElementById('preview-file');
+        const addWebhookBtn = document.getElementById('add-webhook');
         
         // State
         let isSending = false;
         let stopRequested = false;
         let selectedFile = null;
-        
-        // Hacker-themed assets
-        const hackerAvatars = [
-            'https://i.imgur.com/J7lY1Z5.png', // Anonymous mask
-            'https://i.imgur.com/3Q8TnQm.png', // Matrix code
-            'https://i.imgur.com/5X6W9bV.png', // Binary code
-            'https://i.imgur.com/8Y9vZzQ.png', // Skull hacker
-            'https://i.imgur.com/2V4wX9Y.png'  // Green matrix face
-        ];
-        
-        const hackerEmbedImages = [
-            'https://i.imgur.com/9mQ3Z6j.jpg', // Hacker room
-            'https://i.imgur.com/4T2Xw9L.jpg', // Code matrix
-            'https://i.imgur.com/7X8Y9Z0.jpg', // Cyber city
-            'https://i.imgur.com/1A2B3C4.jpg', // Neon terminal
-            'https://i.imgur.com/5D6E7F8.jpg'  // Binary rain
-        ];
         
         // Event Listeners
         fileInput.addEventListener('change', updateFileInfo);
@@ -608,22 +707,61 @@
                 }
             }
         });
-        randomAvatarCheckbox.addEventListener('change', updatePreview);
+        randomAvatarCheckbox.addEventListener('change', toggleAvatarPool);
+        addAvatarBtn.addEventListener('click', addAvatarField);
+        avatarPool.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-avatar')) {
+                e.target.parentElement.remove();
+                if (avatarPool.children.length === 0) {
+                    addAvatarField();
+                }
+            }
+        });
         enableEmbedCheckbox.addEventListener('change', toggleEmbedSettings);
         embedTitleInput.addEventListener('input', updatePreview);
         embedDescriptionInput.addEventListener('input', updatePreview);
         embedColorInput.addEventListener('input', updatePreview);
         embedImageInput.addEventListener('input', updatePreview);
-        randomEmbedImageCheckbox.addEventListener('change', updatePreview);
+        randomEmbedImageCheckbox.addEventListener('change', toggleEmbedImagePool);
+        addEmbedImageBtn.addEventListener('click', addEmbedImageField);
+        embedImagePool.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-embed-image')) {
+                e.target.parentElement.remove();
+                if (embedImagePool.children.length === 0) {
+                    addEmbedImageField();
+                }
+            }
+        });
         messageInput.addEventListener('input', updatePreview);
         usernameInput.addEventListener('input', updatePreview);
         avatarInput.addEventListener('input', updatePreview);
+        addWebhookBtn.addEventListener('click', addWebhookField);
+        webhookList.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-webhook')) {
+                e.target.parentElement.remove();
+                if (webhookList.children.length === 0) {
+                    addWebhookField();
+                }
+            }
+        });
         
         // Initialize
         toggleSpamSettings();
         toggleUsernamePool();
+        toggleAvatarPool();
         toggleEmbedSettings();
+        toggleEmbedImagePool();
         updatePreview();
+        
+        function addWebhookField() {
+            const div = document.createElement('div');
+            div.className = 'webhook-item';
+            div.innerHTML = `
+                <input type="text" class="webhook-url" placeholder="https://discord.com/api/webhooks/...">
+                <button class="remove-webhook">-</button>
+            `;
+            webhookList.appendChild(div);
+        }
         
         function updateFileInfo() {
             if (fileInput.files.length > 0) {
@@ -642,10 +780,21 @@
         
         function toggleUsernamePool() {
             usernamePoolContainer.style.display = randomUsernameCheckbox.checked ? 'block' : 'none';
+            updatePreview();
+        }
+        
+        function toggleAvatarPool() {
+            avatarPoolContainer.style.display = randomAvatarCheckbox.checked ? 'block' : 'none';
+            updatePreview();
         }
         
         function toggleEmbedSettings() {
             embedSettings.style.display = enableEmbedCheckbox.checked ? 'block' : 'none';
+            updatePreview();
+        }
+        
+        function toggleEmbedImagePool() {
+            embedImagePoolContainer.style.display = randomEmbedImageCheckbox.checked ? 'block' : 'none';
             updatePreview();
         }
         
@@ -659,6 +808,26 @@
             usernamePool.appendChild(div);
         }
         
+        function addAvatarField() {
+            const div = document.createElement('div');
+            div.className = 'random-pool-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Avatar URL">
+                <button class="remove-avatar">-</button>
+            `;
+            avatarPool.appendChild(div);
+        }
+        
+        function addEmbedImageField() {
+            const div = document.createElement('div');
+            div.className = 'random-pool-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Image URL">
+                <button class="remove-embed-image">-</button>
+            `;
+            embedImagePool.appendChild(div);
+        }
+        
         function getRandomUsername() {
             const inputs = usernamePool.querySelectorAll('input');
             const usernames = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
@@ -668,11 +837,19 @@
         }
         
         function getRandomAvatar() {
-            return hackerAvatars[Math.floor(Math.random() * hackerAvatars.length)];
+            const inputs = avatarPool.querySelectorAll('input');
+            const avatars = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
+            return avatars.length > 0 
+                ? avatars[Math.floor(Math.random() * avatars.length)]
+                : 'https://i.imgur.com/J7lY1Z5.png';
         }
         
         function getRandomEmbedImage() {
-            return hackerEmbedImages[Math.floor(Math.random() * hackerEmbedImages.length)];
+            const inputs = embedImagePool.querySelectorAll('input');
+            const images = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
+            return images.length > 0 
+                ? images[Math.floor(Math.random() * images.length)]
+                : 'https://i.imgur.com/9mQ3Z6j.jpg';
         }
         
         function convertToMs(value, unit) {
@@ -759,7 +936,14 @@
         }
         
         async function sendMessages() {
-            const webhook = webhookInput.value.trim();
+            const webhookElements = webhookList.querySelectorAll('.webhook-url');
+            const webhooks = Array.from(webhookElements).map(el => el.value.trim()).filter(Boolean);
+            
+            if (webhooks.length === 0) {
+                showStatus('Please add at least one webhook URL', 'error');
+                return;
+            }
+            
             const message = messageInput.value.trim();
             const username = usernameInput.value.trim();
             const avatar = avatarInput.value.trim();
@@ -778,11 +962,6 @@
                 : embedImageInput.value.trim();
             
             // Validate
-            if (!webhook) {
-                showStatus('Please enter a webhook URL', 'error');
-                return;
-            }
-            
             if (!message && !selectedFile && !enableEmbed) {
                 showStatus('Please enter a message, add a file, or enable embed', 'error');
                 return;
@@ -809,7 +988,7 @@
             sendBtn.disabled = true;
             stopBtn.classList.remove('hidden');
             
-            showStatus(`Sending ${count} messages...`, 'info');
+            showStatus(`Sending ${count} messages to ${webhooks.length} webhooks...`, 'info');
             
             let success = 0;
             let errors = 0;
@@ -841,34 +1020,44 @@
                         payload.thread_name = threadName;
                     }
                     
-                    let response;
-                    
-                    if (selectedFile) {
-                        // Send with file
-                        const formData = new FormData();
-                        formData.append('payload_json', JSON.stringify(payload));
-                        formData.append('file', selectedFile);
+                    // Send to all webhooks
+                    for (const webhook of webhooks) {
+                        if (stopRequested) break;
                         
-                        response = await fetch(webhook, {
-                            method: 'POST',
-                            body: formData
-                        });
-                    } else {
-                        // Send without file
-                        response = await fetch(webhook, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                    }
-                    
-                    if (response.ok) {
-                        success++;
-                        addHistory('success', message || '[File]' || '[Embed]');
-                    } else {
-                        errors++;
-                        const error = await response.json().catch(() => ({}));
-                        addHistory('error', message || '[File]' || '[Embed]', error.message || 'Unknown error');
+                        try {
+                            let response;
+                            
+                            if (selectedFile) {
+                                // Send with file
+                                const formData = new FormData();
+                                formData.append('payload_json', JSON.stringify(payload));
+                                formData.append('file', selectedFile);
+                                
+                                response = await fetch(webhook, {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                            } else {
+                                // Send without file
+                                response = await fetch(webhook, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                            }
+                            
+                            if (response.ok) {
+                                success++;
+                                addHistory('success', message || '[File]' || '[Embed]', webhook);
+                            } else {
+                                errors++;
+                                const error = await response.json().catch(() => ({}));
+                                addHistory('error', message || '[File]' || '[Embed]', error.message || 'Unknown error', webhook);
+                            }
+                        } catch (err) {
+                            errors++;
+                            addHistory('error', message || '[File]' || '[Embed]', err.message, webhook);
+                        }
                     }
                     
                     showStatus(`Sent ${i+1}/${count} (${success} OK, ${errors} failed)`, 'info');
@@ -897,7 +1086,7 @@
             if (stopRequested) {
                 showStatus(`Stopped. Sent ${success} messages`, 'warning');
             } else {
-                showStatus(`Done! ${success} sent, ${errors} failed`, success === count ? 'success' : 'warning');
+                showStatus(`Done! ${success} sent, ${errors} failed`, success === (count * webhooks.length) ? 'success' : 'warning');
             }
         }
         
@@ -923,15 +1112,16 @@
                 'var(--border)';
         }
         
-        function addHistory(type, message, error = '') {
+        function addHistory(type, message, error = '', webhook = '') {
             const item = document.createElement('div');
             item.className = `history-item ${type}`;
             
             const time = new Date().toLocaleTimeString();
             const preview = message.length > 50 ? message.substring(0, 50) + '...' : message;
+            const webhookPreview = webhook ? ` (${webhook.substring(0, 20)}...)` : '';
             
             item.innerHTML = `
-                <div>[${time}] ${preview}</div>
+                <div>[${time}]${webhookPreview} ${preview}</div>
                 ${error ? `<div style="color:var(--error)">${error}</div>` : ''}
             `;
             
