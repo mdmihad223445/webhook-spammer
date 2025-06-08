@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Webhook Tool</title>
+    <style>
+        :root {
+            --hacker-green: #00ff41;
+            --matrix-green: #008f11;
+            --dark-bg: #0a0a0a;
+            --darker-bg: #050505;
+            --card-bg: #111111;
+            --border: #003b00;
+            --text: #e0e0e0;
+            --error: #ff0033;
+            --warning: #ff5500;
+            --glow: 0 0 5px var(--hacker-green);
+            --scanline: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 65, 0.05),
+                rgba(0, 255, 65, 0.05) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--dark-bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 255, 65, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 65, 0.05) 0%, transparent 20%),
+                var(--scanline);
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            box-shadow: var(--glow);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--hacker-green);
+            box-shadow: 0 0 10px var(--hacker-green);
+            animation: scanline 6s linear infinite;
+        }
+        
+        @keyframes scanline {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        h1, h2, h3 {
+            color: var(--hacker-green);
+            letter-spacing: 1px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--matrix-green);
+            padding-bottom: 10px;
+            text-shadow: 0 0 5px var(--hacker-green);
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--hacker-green);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            background: var(--darker-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background: rgba(0, 255, 65, 0.1);
+            color: var(--hacker-green);
+            border: 1px solid var(--hacker-green);
+            padding: 10px 20px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: rgba(0, 255, 65, 0.2);
+            box-shadow: 0 0 10px var(--hacker-green);
+        }
+        
+        #stop {
+            color: var(--error);
+            border-color: var(--error);
+            background: rgba(255, 0, 51, 0.1);
+        }
+        
+        #stop:hover {
+            background: rgba(255, 0, 51, 0.2);
+            box-shadow: 0 0 10px var(--error);
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--border);
+            background: var(--darker-bg);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .file-info {
+            font-size: 14px;
+            margin-top: 5px;
+            color: var(--matrix-green);
+        }
+        
+        .history-item {
+            padding: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            background: var(--darker-bg);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .success {
+            border-left: 3px solid var(--hacker-green);
+        }
+        
+        .error {
+            border-left: 3px solid var(--error);
+        }
+        
+        .warning {
+            border-left: 3px solid var(--warning);
+        }
+        
+        .inline-fields {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .inline-fields .input-group {
+            flex: 1;
+        }
+        
+        .time-unit {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .time-unit select {
+            width: auto;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .checkbox-group label {
+            margin-bottom: 0;
+        }
+        
+        .preview-container {
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin-top: 20px;
+            background: var(--darker-bg);
+            border-radius: 5px;
+        }
+        
+        .preview-message {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #36393f;
+            border-radius: 8px;
+            padding: 16px;
+            color: #dcddde;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            position: relative;
+        }
+        
+        .preview-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .preview-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 12px;
+            background: #7289da;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .preview-username {
+            font-weight: 600;
+            color: white;
+        }
+        
+        .preview-content {
+            margin-left: 52px;
+            margin-bottom: 8px;
+        }
+        
+        .preview-embed {
+            background: #2f3136;
+            border-left: 4px solid #7289da;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            max-width: 400px;
+        }
+        
+        .preview-embed-title {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .preview-embed-description {
+            color: #dcddde;
+            margin-bottom: 8px;
+        }
+        
+        .preview-embed-image {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        
+        .preview-file {
+            margin-top: 8px;
+            color: #7289da;
+            font-weight: 500;
+        }
+        
+        .random-pool {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .random-pool-item {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .random-pool-item input {
+            flex: 1;
+        }
+        
+        .random-pool-item button {
+            padding: 5px 10px;
+            margin: 0;
+        }
+        
+        .blink {
+            animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        
+        .typing {
+            display: inline-block;
+        }
+        
+        .typing::after {
+            content: "|";
+            animation: blink 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Discord Webhook Tool <span class="blink">_</span></h1>
+        
+        <div class="section">
+            <h2>Basic Settings</h2>
+            
+            <div class="input-group">
+                <label for="webhook">Webhook URL:</label>
+                <input type="text" id="webhook" placeholder="https://discord.com/api/webhooks/...">
+            </div>
+            
+            <div class="input-group">
+                <label for="message">Message Content:</label>
+                <textarea id="message" placeholder="Type your message here..."></textarea>
+            </div>
+            
+            <div class="inline-fields">
+                <div class="input-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="Custom username">
+                </div>
+                
+                <div class="input-group">
+                    <label for="avatar">Avatar URL:</label>
+                    <input type="text" id="avatar" placeholder="https://example.com/avatar.png">
+                </div>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="random-username">
+                <label for="random-username">Randomize username for each message</label>
+            </div>
+            
+            <div id="username-pool-container" class="hidden">
+                <label>Username Pool (one per line):</label>
+                <div class="random-pool" id="username-pool">
+                    <div class="random-pool-item">
+                        <input type="text" placeholder="Username" value="root">
+                        <button class="remove-username">-</button>
+                    </div>
+                    <div class="random-pool-item">
+                        <input type="text" placeholder="Username" value="admin">
+                        <button class="remove-username">-</button>
+                    </div>
+                    <div class="random-pool-item">
+                        <input type="text" placeholder="Username" value="hacker">
+                        <button class="remove-username">-</button>
+                    </div>
+                </div>
+                <button id="add-username">+ Add Username</button>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="random-avatar">
+                <label for="random-avatar">Use random hacker avatar for each message</label>
+            </div>
+            
+            <div class="input-group">
+                <label for="file">Attachment:</label>
+                <input type="file" id="file">
+                <div id="file-info" class="file-info">No file selected</div>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="tts">
+                <label for="tts">Enable Text-to-Speech (TTS)</label>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Embed Settings</h2>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="enable-embed">
+                <label for="enable-embed">Enable Embed</label>
+            </div>
+            
+            <div id="embed-settings" class="hidden">
+                <div class="input-group">
+                    <label for="embed-title">Embed Title:</label>
+                    <input type="text" id="embed-title" placeholder="Embed title">
+                </div>
+                
+                <div class="input-group">
+                    <label for="embed-description">Embed Description:</label>
+                    <textarea id="embed-description" placeholder="Embed description"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="embed-color">Embed Color:</label>
+                    <input type="color" id="embed-color" value="#00ff41">
+                </div>
+                
+                <div class="input-group">
+                    <label for="embed-image">Embed Image URL:</label>
+                    <input type="text" id="embed-image" placeholder="https://example.com/image.png">
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="random-embed-image">
+                    <label for="random-embed-image">Use random hacker image for embed</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Send Options</h2>
+            
+            <div class="input-group">
+                <label>Send Mode:</label>
+                <select id="mode">
+                    <option value="once">Send once</option>
+                    <option value="spam">Spam mode</option>
+                </select>
+            </div>
+            
+            <div id="spam-settings">
+                <div class="input-group">
+                    <label for="count">Message Count:</label>
+                    <input type="number" id="count" min="1" value="10">
+                </div>
+                
+                <div class="input-group">
+                    <label for="delay">Delay:</label>
+                    <div class="time-unit">
+                        <input type="number" id="delay" min="0" value="1">
+                        <select id="delay-unit">
+                            <option value="ms">Milliseconds</option>
+                            <option value="s" selected>Seconds</option>
+                            <option value="m">Minutes</option>
+                            <option value="h">Hours</option>
+                            <option value="d">Days</option>
+                            <option value="w">Weeks</option>
+                            <option value="M">Months</option>
+                            <option value="y">Years</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="delay-variation">Delay Variation (±):</label>
+                    <div class="time-unit">
+                        <input type="number" id="delay-variation" min="0" value="0">
+                        <select id="variation-unit">
+                            <option value="ms">Milliseconds</option>
+                            <option value="s" selected>Seconds</option>
+                            <option value="m">Minutes</option>
+                            <option value="h">Hours</option>
+                            <option value="d">Days</option>
+                            <option value="w">Weeks</option>
+                            <option value="M">Months</option>
+                            <option value="y">Years</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="thread-name">Thread Name (optional):</label>
+                <input type="text" id="thread-name" placeholder="Thread name">
+            </div>
+        </div>
+        
+        <div class="section">
+            <button id="send">Send Messages</button>
+            <button id="stop" class="hidden">Stop Sending</button>
+            <button id="preview-btn">Preview Message</button>
+            
+            <div class="status" id="status">Ready</div>
+        </div>
+        
+        <div class="section">
+            <h2>Message Preview</h2>
+            <div id="preview" class="preview-container hidden">
+                <div class="preview-message">
+                    <div class="preview-header">
+                        <div class="preview-avatar" id="preview-avatar">U</div>
+                        <div class="preview-username" id="preview-username">Username</div>
+                    </div>
+                    <div class="preview-content" id="preview-content">
+                        Message content will appear here...
+                    </div>
+                    <div class="preview-embed hidden" id="preview-embed">
+                        <div class="preview-embed-title" id="preview-embed-title">Embed Title</div>
+                        <div class="preview-embed-description" id="preview-embed-description">Embed description will appear here...</div>
+                        <img class="preview-embed-image hidden" id="preview-embed-image">
+                    </div>
+                    <div class="preview-file hidden" id="preview-file">Attachment: filename.ext</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Message History</h2>
+            <div id="history"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const webhookInput = document.getElementById('webhook');
+        const messageInput = document.getElementById('message');
+        const usernameInput = document.getElementById('username');
+        const avatarInput = document.getElementById('avatar');
+        const fileInput = document.getElementById('file');
+        const fileInfo = document.getElementById('file-info');
+        const ttsCheckbox = document.getElementById('tts');
+        const modeSelect = document.getElementById('mode');
+        const spamSettings = document.getElementById('spam-settings');
+        const countInput = document.getElementById('count');
+        const delayInput = document.getElementById('delay');
+        const delayUnit = document.getElementById('delay-unit');
+        const delayVariationInput = document.getElementById('delay-variation');
+        const variationUnit = document.getElementById('variation-unit');
+        const sendBtn = document.getElementById('send');
+        const stopBtn = document.getElementById('stop');
+        const previewBtn = document.getElementById('preview-btn');
+        const statusDiv = document.getElementById('status');
+        const historyDiv = document.getElementById('history');
+        const threadNameInput = document.getElementById('thread-name');
+        const randomUsernameCheckbox = document.getElementById('random-username');
+        const usernamePoolContainer = document.getElementById('username-pool-container');
+        const usernamePool = document.getElementById('username-pool');
+        const addUsernameBtn = document.getElementById('add-username');
+        const randomAvatarCheckbox = document.getElementById('random-avatar');
+        const enableEmbedCheckbox = document.getElementById('enable-embed');
+        const embedSettings = document.getElementById('embed-settings');
+        const embedTitleInput = document.getElementById('embed-title');
+        const embedDescriptionInput = document.getElementById('embed-description');
+        const embedColorInput = document.getElementById('embed-color');
+        const embedImageInput = document.getElementById('embed-image');
+        const randomEmbedImageCheckbox = document.getElementById('random-embed-image');
+        const previewContainer = document.getElementById('preview');
+        const previewAvatar = document.getElementById('preview-avatar');
+        const previewUsername = document.getElementById('preview-username');
+        const previewContent = document.getElementById('preview-content');
+        const previewEmbed = document.getElementById('preview-embed');
+        const previewEmbedTitle = document.getElementById('preview-embed-title');
+        const previewEmbedDescription = document.getElementById('preview-embed-description');
+        const previewEmbedImage = document.getElementById('preview-embed-image');
+        const previewFile = document.getElementById('preview-file');
+        
+        // State
+        let isSending = false;
+        let stopRequested = false;
+        let selectedFile = null;
+        
+        // Hacker-themed assets
+        const hackerAvatars = [
+            'https://i.imgur.com/J7lY1Z5.png', // Anonymous mask
+            'https://i.imgur.com/3Q8TnQm.png', // Matrix code
+            'https://i.imgur.com/5X6W9bV.png', // Binary code
+            'https://i.imgur.com/8Y9vZzQ.png', // Skull hacker
+            'https://i.imgur.com/2V4wX9Y.png'  // Green matrix face
+        ];
+        
+        const hackerEmbedImages = [
+            'https://i.imgur.com/9mQ3Z6j.jpg', // Hacker room
+            'https://i.imgur.com/4T2Xw9L.jpg', // Code matrix
+            'https://i.imgur.com/7X8Y9Z0.jpg', // Cyber city
+            'https://i.imgur.com/1A2B3C4.jpg', // Neon terminal
+            'https://i.imgur.com/5D6E7F8.jpg'  // Binary rain
+        ];
+        
+        // Event Listeners
+        fileInput.addEventListener('change', updateFileInfo);
+        modeSelect.addEventListener('change', toggleSpamSettings);
+        sendBtn.addEventListener('click', sendMessages);
+        stopBtn.addEventListener('click', stopSending);
+        previewBtn.addEventListener('click', updatePreview);
+        randomUsernameCheckbox.addEventListener('change', toggleUsernamePool);
+        addUsernameBtn.addEventListener('click', addUsernameField);
+        usernamePool.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-username')) {
+                e.target.parentElement.remove();
+                if (usernamePool.children.length === 0) {
+                    addUsernameField();
+                }
+            }
+        });
+        randomAvatarCheckbox.addEventListener('change', updatePreview);
+        enableEmbedCheckbox.addEventListener('change', toggleEmbedSettings);
+        embedTitleInput.addEventListener('input', updatePreview);
+        embedDescriptionInput.addEventListener('input', updatePreview);
+        embedColorInput.addEventListener('input', updatePreview);
+        embedImageInput.addEventListener('input', updatePreview);
+        randomEmbedImageCheckbox.addEventListener('change', updatePreview);
+        messageInput.addEventListener('input', updatePreview);
+        usernameInput.addEventListener('input', updatePreview);
+        avatarInput.addEventListener('input', updatePreview);
+        
+        // Initialize
+        toggleSpamSettings();
+        toggleUsernamePool();
+        toggleEmbedSettings();
+        updatePreview();
+        
+        function updateFileInfo() {
+            if (fileInput.files.length > 0) {
+                selectedFile = fileInput.files[0];
+                fileInfo.textContent = `Selected: ${selectedFile.name} (${formatFileSize(selectedFile.size)})`;
+            } else {
+                selectedFile = null;
+                fileInfo.textContent = 'No file selected';
+            }
+            updatePreview();
+        }
+        
+        function toggleSpamSettings() {
+            spamSettings.style.display = modeSelect.value === 'spam' ? 'block' : 'none';
+        }
+        
+        function toggleUsernamePool() {
+            usernamePoolContainer.style.display = randomUsernameCheckbox.checked ? 'block' : 'none';
+        }
+        
+        function toggleEmbedSettings() {
+            embedSettings.style.display = enableEmbedCheckbox.checked ? 'block' : 'none';
+            updatePreview();
+        }
+        
+        function addUsernameField() {
+            const div = document.createElement('div');
+            div.className = 'random-pool-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Username">
+                <button class="remove-username">-</button>
+            `;
+            usernamePool.appendChild(div);
+        }
+        
+        function getRandomUsername() {
+            const inputs = usernamePool.querySelectorAll('input');
+            const usernames = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
+            return usernames.length > 0 
+                ? usernames[Math.floor(Math.random() * usernames.length)]
+                : 'hacker_' + Math.floor(Math.random() * 1000);
+        }
+        
+        function getRandomAvatar() {
+            return hackerAvatars[Math.floor(Math.random() * hackerAvatars.length)];
+        }
+        
+        function getRandomEmbedImage() {
+            return hackerEmbedImages[Math.floor(Math.random() * hackerEmbedImages.length)];
+        }
+        
+        function convertToMs(value, unit) {
+            switch(unit) {
+                case 'ms': return value;
+                case 's': return value * 1000;
+                case 'm': return value * 1000 * 60;
+                case 'h': return value * 1000 * 60 * 60;
+                case 'd': return value * 1000 * 60 * 60 * 24;
+                case 'w': return value * 1000 * 60 * 60 * 24 * 7;
+                case 'M': return value * 1000 * 60 * 60 * 24 * 30;
+                case 'y': return value * 1000 * 60 * 60 * 24 * 365;
+                default: return value * 1000;
+            }
+        }
+        
+        function hexToDecimal(hex) {
+            return parseInt(hex.replace('#', ''), 16);
+        }
+        
+        function updatePreview() {
+            previewContainer.classList.remove('hidden');
+            
+            // Set username
+            const username = usernameInput.value.trim() || 'Webhook User';
+            previewUsername.textContent = randomUsernameCheckbox.checked ? 'random_user' : username;
+            
+            // Set avatar
+            const avatar = avatarInput.value.trim();
+            if (randomAvatarCheckbox.checked) {
+                previewAvatar.style.backgroundImage = `url(${getRandomAvatar()})`;
+                previewAvatar.textContent = '';
+            } else if (avatar) {
+                previewAvatar.style.backgroundImage = `url(${avatar})`;
+                previewAvatar.textContent = '';
+            } else {
+                previewAvatar.style.backgroundImage = '';
+                previewAvatar.textContent = username.charAt(0).toUpperCase();
+            }
+            
+            // Set content
+            previewContent.textContent = messageInput.value.trim() || '[No message content]';
+            
+            // Set file preview
+            if (selectedFile) {
+                previewFile.classList.remove('hidden');
+                previewFile.textContent = `Attachment: ${selectedFile.name}`;
+            } else {
+                previewFile.classList.add('hidden');
+            }
+            
+            // Set embed preview
+            if (enableEmbedCheckbox.checked) {
+                previewEmbed.classList.remove('hidden');
+                
+                // Set embed title
+                const embedTitle = embedTitleInput.value.trim();
+                previewEmbedTitle.textContent = embedTitle || 'Embed Title';
+                previewEmbedTitle.style.display = embedTitle ? 'block' : 'none';
+                
+                // Set embed description
+                const embedDesc = embedDescriptionInput.value.trim();
+                previewEmbedDescription.textContent = embedDesc || 'Embed description goes here...';
+                previewEmbedDescription.style.display = embedDesc ? 'block' : 'none';
+                
+                // Set embed color
+                previewEmbed.style.borderLeftColor = embedColorInput.value;
+                
+                // Set embed image
+                const embedImage = randomEmbedImageCheckbox.checked 
+                    ? getRandomEmbedImage() 
+                    : embedImageInput.value.trim();
+                
+                if (embedImage) {
+                    previewEmbedImage.classList.remove('hidden');
+                    previewEmbedImage.src = embedImage;
+                    previewEmbedImage.alt = 'Embed image';
+                } else {
+                    previewEmbedImage.classList.add('hidden');
+                }
+            } else {
+                previewEmbed.classList.add('hidden');
+            }
+        }
+        
+        async function sendMessages() {
+            const webhook = webhookInput.value.trim();
+            const message = messageInput.value.trim();
+            const username = usernameInput.value.trim();
+            const avatar = avatarInput.value.trim();
+            const tts = ttsCheckbox.checked;
+            const mode = modeSelect.value;
+            const count = mode === 'spam' ? parseInt(countInput.value) : 1;
+            const baseDelay = mode === 'spam' ? convertToMs(parseFloat(delayInput.value), delayUnit.value) : 0;
+            const delayVariation = mode === 'spam' ? convertToMs(parseFloat(delayVariationInput.value), variationUnit.value) : 0;
+            const threadName = threadNameInput.value.trim();
+            const enableEmbed = enableEmbedCheckbox.checked;
+            const embedTitle = embedTitleInput.value.trim();
+            const embedDescription = embedDescriptionInput.value.trim();
+            const embedColor = hexToDecimal(embedColorInput.value);
+            const embedImage = randomEmbedImageCheckbox.checked 
+                ? getRandomEmbedImage() 
+                : embedImageInput.value.trim();
+            
+            // Validate
+            if (!webhook) {
+                showStatus('Please enter a webhook URL', 'error');
+                return;
+            }
+            
+            if (!message && !selectedFile && !enableEmbed) {
+                showStatus('Please enter a message, add a file, or enable embed', 'error');
+                return;
+            }
+            
+            if (isNaN(count) || count < 1) {
+                showStatus('Invalid message count', 'error');
+                return;
+            }
+            
+            if (isNaN(baseDelay) || baseDelay < 0) {
+                showStatus('Invalid delay value', 'error');
+                return;
+            }
+            
+            if (isNaN(delayVariation) || delayVariation < 0) {
+                showStatus('Invalid delay variation', 'error');
+                return;
+            }
+            
+            // Start sending
+            isSending = true;
+            stopRequested = false;
+            sendBtn.disabled = true;
+            stopBtn.classList.remove('hidden');
+            
+            showStatus(`Sending ${count} messages...`, 'info');
+            
+            let success = 0;
+            let errors = 0;
+            
+            for (let i = 0; i < count; i++) {
+                if (stopRequested) break;
+                
+                try {
+                    // Build payload
+                    const payload = {
+                        content: message || undefined,
+                        username: randomUsernameCheckbox.checked ? getRandomUsername() : username || undefined,
+                        avatar_url: randomAvatarCheckbox.checked ? getRandomAvatar() : avatar || undefined,
+                        tts: tts
+                    };
+                    
+                    // Add embed if enabled
+                    if (enableEmbed) {
+                        payload.embeds = [{
+                            title: embedTitle || undefined,
+                            description: embedDescription || undefined,
+                            color: embedColor || undefined,
+                            image: embedImage ? { url: embedImage } : undefined
+                        }];
+                    }
+                    
+                    // Add thread if specified
+                    if (threadName) {
+                        payload.thread_name = threadName;
+                    }
+                    
+                    let response;
+                    
+                    if (selectedFile) {
+                        // Send with file
+                        const formData = new FormData();
+                        formData.append('payload_json', JSON.stringify(payload));
+                        formData.append('file', selectedFile);
+                        
+                        response = await fetch(webhook, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    } else {
+                        // Send without file
+                        response = await fetch(webhook, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                    
+                    if (response.ok) {
+                        success++;
+                        addHistory('success', message || '[File]' || '[Embed]');
+                    } else {
+                        errors++;
+                        const error = await response.json().catch(() => ({}));
+                        addHistory('error', message || '[File]' || '[Embed]', error.message || 'Unknown error');
+                    }
+                    
+                    showStatus(`Sent ${i+1}/${count} (${success} OK, ${errors} failed)`, 'info');
+                    
+                    // Delay if not last message
+                    if (i < count - 1 && baseDelay > 0) {
+                        const variation = delayVariation > 0 
+                            ? Math.floor(Math.random() * delayVariation * 2) - delayVariation
+                            : 0;
+                        const actualDelay = Math.max(0, baseDelay + variation);
+                        
+                        await new Promise(resolve => setTimeout(resolve, actualDelay));
+                    }
+                } catch (err) {
+                    errors++;
+                    addHistory('error', message || '[File]' || '[Embed]', err.message);
+                    showStatus(`Error: ${err.message}`, 'error');
+                }
+            }
+            
+            // Done sending
+            isSending = false;
+            sendBtn.disabled = false;
+            stopBtn.classList.add('hidden');
+            
+            if (stopRequested) {
+                showStatus(`Stopped. Sent ${success} messages`, 'warning');
+            } else {
+                showStatus(`Done! ${success} sent, ${errors} failed`, success === count ? 'success' : 'warning');
+            }
+        }
+        
+        function stopSending() {
+            if (isSending) {
+                stopRequested = true;
+                stopBtn.disabled = true;
+                showStatus('Stopping...', 'warning');
+            }
+        }
+        
+        function showStatus(msg, type) {
+            statusDiv.textContent = msg;
+            statusDiv.style.color = 
+                type === 'error' ? 'var(--error)' :
+                type === 'success' ? 'var(--hacker-green)' :
+                type === 'warning' ? 'var(--warning)' :
+                'var(--text)';
+            statusDiv.style.borderColor = 
+                type === 'error' ? 'var(--error)' :
+                type === 'success' ? 'var(--hacker-green)' :
+                type === 'warning' ? 'var(--warning)' :
+                'var(--border)';
+        }
+        
+        function addHistory(type, message, error = '') {
+            const item = document.createElement('div');
+            item.className = `history-item ${type}`;
+            
+            const time = new Date().toLocaleTimeString();
+            const preview = message.length > 50 ? message.substring(0, 50) + '...' : message;
+            
+            item.innerHTML = `
+                <div>[${time}] ${preview}</div>
+                ${error ? `<div style="color:var(--error)">${error}</div>` : ''}
+            `;
+            
+            historyDiv.prepend(item);
+            
+            // Limit history
+            if (historyDiv.children.length > 50) {
+                historyDiv.removeChild(historyDiv.lastChild);
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
