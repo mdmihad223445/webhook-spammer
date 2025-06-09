@@ -8,12 +8,18 @@
 </head>
 <body>
     <div id="anti-inspect">
-        <h1>You Can't Noob Sucker hahhahaha🤣😂😆</h1>
-        <p>Stop trying to inspect this page!</p>
+        <h1>ACCESS DENIED</h1>
+        <p>Inspection tools detected! System lockdown initiated.</p>
     </div>
     
     <div class="container">
-        <h1>Discord Webhook Tool <span class="blink">_</span></h1>
+        <div class="header">
+            <h1>Discord Webhook Tool <span class="blink">_</span></h1>
+            <div class="header-buttons">
+                <button id="terminal-btn" class="hacker-btn">Terminal</button>
+                <button id="theme-btn" class="hacker-btn">Dark Mode</button>
+            </div>
+        </div>
         
         <div class="section">
             <h2>Basic Settings</h2>
@@ -23,10 +29,10 @@
                 <div class="webhook-list" id="webhook-list">
                     <div class="webhook-item">
                         <input type="text" class="webhook-url" placeholder="https://discord.com/api/webhooks/...">
-                        <button class="remove-webhook">-</button>
+                        <button class="remove-webhook hacker-btn">-</button>
                     </div>
                 </div>
-                <button id="add-webhook">+ Add Webhook</button>
+                <button id="add-webhook" class="hacker-btn">+ Add Webhook</button>
             </div>
             
             <div class="input-group">
@@ -56,18 +62,18 @@
                 <div class="random-pool" id="username-pool">
                     <div class="random-pool-item">
                         <input type="text" placeholder="Username" value="root">
-                        <button class="remove-username">-</button>
+                        <button class="remove-username hacker-btn">-</button>
                     </div>
                     <div class="random-pool-item">
                         <input type="text" placeholder="Username" value="admin">
-                        <button class="remove-username">-</button>
+                        <button class="remove-username hacker-btn">-</button>
                     </div>
                     <div class="random-pool-item">
                         <input type="text" placeholder="Username" value="hacker">
-                        <button class="remove-username">-</button>
+                        <button class="remove-username hacker-btn">-</button>
                     </div>
                 </div>
-                <button id="add-username">+ Add Username</button>
+                <button id="add-username" class="hacker-btn">+ Add Username</button>
             </div>
             
             <div class="checkbox-group">
@@ -80,14 +86,14 @@
                 <div class="random-pool" id="avatar-pool">
                     <div class="random-pool-item">
                         <input type="text" placeholder="Avatar URL" value="https://i.imgur.com/J7lY1Z5.png">
-                        <button class="remove-avatar">-</button>
+                        <button class="remove-avatar hacker-btn">-</button>
                     </div>
                     <div class="random-pool-item">
                         <input type="text" placeholder="Avatar URL" value="https://i.imgur.com/3Q8TnQm.png">
-                        <button class="remove-avatar">-</button>
+                        <button class="remove-avatar hacker-btn">-</button>
                     </div>
                 </div>
-                <button id="add-avatar">+ Add Avatar URL</button>
+                <button id="add-avatar" class="hacker-btn">+ Add Avatar URL</button>
             </div>
             
             <div class="input-group">
@@ -141,14 +147,14 @@
                     <div class="random-pool" id="embed-image-pool">
                         <div class="random-pool-item">
                             <input type="text" placeholder="Image URL" value="https://i.imgur.com/9mQ3Z6j.jpg">
-                            <button class="remove-embed-image">-</button>
+                            <button class="remove-embed-image hacker-btn">-</button>
                         </div>
                         <div class="random-pool-item">
                             <input type="text" placeholder="Image URL" value="https://i.imgur.com/4T2Xw9L.jpg">
-                            <button class="remove-embed-image">-</button>
+                            <button class="remove-embed-image hacker-btn">-</button>
                         </div>
                     </div>
-                    <button id="add-embed-image">+ Add Image URL</button>
+                    <button id="add-embed-image" class="hacker-btn">+ Add Image URL</button>
                 </div>
             </div>
         </div>
@@ -158,23 +164,25 @@
             
             <div class="input-group">
                 <label>Send Mode:</label>
-                <select id="mode">
+                <select id="mode" class="hacker-select">
                     <option value="once">Send once</option>
                     <option value="spam">Spam mode</option>
+                    <option value="flood">Flood mode</option>
+                    <option value="slowloris">Slowloris attack</option>
                 </select>
             </div>
             
             <div id="spam-settings">
                 <div class="input-group">
                     <label for="count">Message Count:</label>
-                    <input type="number" id="count" min="1" value="10">
+                    <input type="number" id="count" min="1" value="10" class="hacker-input">
                 </div>
                 
                 <div class="input-group">
                     <label for="delay">Delay:</label>
                     <div class="time-unit">
-                        <input type="number" id="delay" min="0" value="1">
-                        <select id="delay-unit">
+                        <input type="number" id="delay" min="0" value="1" class="hacker-input">
+                        <select id="delay-unit" class="hacker-select">
                             <option value="ms">Milliseconds</option>
                             <option value="s" selected>Seconds</option>
                             <option value="m">Minutes</option>
@@ -190,8 +198,8 @@
                 <div class="input-group">
                     <label for="delay-variation">Delay Variation (±):</label>
                     <div class="time-unit">
-                        <input type="number" id="delay-variation" min="0" value="0">
-                        <select id="variation-unit">
+                        <input type="number" id="delay-variation" min="0" value="0" class="hacker-input">
+                        <select id="variation-unit" class="hacker-select">
                             <option value="ms">Milliseconds</option>
                             <option value="s" selected>Seconds</option>
                             <option value="m">Minutes</option>
@@ -207,14 +215,17 @@
             
             <div class="input-group">
                 <label for="thread-name">Thread Name (optional):</label>
-                <input type="text" id="thread-name" placeholder="Thread name">
+                <input type="text" id="thread-name" placeholder="Thread name" class="hacker-input">
             </div>
         </div>
         
         <div class="section">
-            <button id="send">Send Messages</button>
-            <button id="stop" class="hidden">Stop Sending</button>
-            <button id="preview-btn">Preview Message</button>
+            <div class="action-buttons">
+                <button id="send" class="hacker-btn primary">Send Messages</button>
+                <button id="stop" class="hacker-btn danger hidden">Stop Sending</button>
+                <button id="preview-btn" class="hacker-btn">Preview Message</button>
+                <button id="clear-btn" class="hacker-btn">Clear History</button>
+            </div>
             
             <div class="status" id="status">Ready</div>
         </div>
@@ -243,6 +254,18 @@
         <div class="section">
             <h2>Message History</h2>
             <div id="history"></div>
+        </div>
+    </div>
+
+    <div id="terminal" class="hidden">
+        <div class="terminal-header">
+            <h3>System Terminal</h3>
+            <button id="close-terminal" class="hacker-btn danger">X</button>
+        </div>
+        <div id="terminal-output"></div>
+        <div class="terminal-input">
+            <span class="prompt">root@webhook-tool:~$</span>
+            <input type="text" id="terminal-input" autocomplete="off">
         </div>
     </div>
 
