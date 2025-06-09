@@ -1,0 +1,530 @@
+// Anti-inspect protection
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    showAntiInspect();
+});
+
+document.addEventListener('keydown', function(e) {
+    // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    if (e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+        (e.ctrlKey && e.shiftKey && e.key === 'J') || 
+        (e.ctrlKey && e.key === 'u')) {
+        e.preventDefault();
+        showAntiInspect();
+    }
+});
+
+function showAntiInspect() {
+    const antiInspect = document.getElementById('anti-inspect');
+    antiInspect.style.display = 'block';
+    
+    setTimeout(() => {
+        antiInspect.style.display = 'none';
+    }, 3000);
+}
+
+// DOM Elements
+const webhookList = document.getElementById('webhook-list');
+const messageInput = document.getElementById('message');
+const usernameInput = document.getElementById('username');
+const avatarInput = document.getElementById('avatar');
+const fileInput = document.getElementById('file');
+const fileInfo = document.getElementById('file-info');
+const ttsCheckbox = document.getElementById('tts');
+const modeSelect = document.getElementById('mode');
+const spamSettings = document.getElementById('spam-settings');
+const countInput = document.getElementById('count');
+const delayInput = document.getElementById('delay');
+const delayUnit = document.getElementById('delay-unit');
+const delayVariationInput = document.getElementById('delay-variation');
+const variationUnit = document.getElementById('variation-unit');
+const sendBtn = document.getElementById('send');
+const stopBtn = document.getElementById('stop');
+const previewBtn = document.getElementById('preview-btn');
+const statusDiv = document.getElementById('status');
+const historyDiv = document.getElementById('history');
+const threadNameInput = document.getElementById('thread-name');
+const randomUsernameCheckbox = document.getElementById('random-username');
+const usernamePoolContainer = document.getElementById('username-pool-container');
+const usernamePool = document.getElementById('username-pool');
+const addUsernameBtn = document.getElementById('add-username');
+const randomAvatarCheckbox = document.getElementById('random-avatar');
+const avatarPoolContainer = document.getElementById('avatar-pool-container');
+const avatarPool = document.getElementById('avatar-pool');
+const addAvatarBtn = document.getElementById('add-avatar');
+const enableEmbedCheckbox = document.getElementById('enable-embed');
+const embedSettings = document.getElementById('embed-settings');
+const embedTitleInput = document.getElementById('embed-title');
+const embedDescriptionInput = document.getElementById('embed-description');
+const embedColorInput = document.getElementById('embed-color');
+const embedImageInput = document.getElementById('embed-image');
+const randomEmbedImageCheckbox = document.getElementById('random-embed-image');
+const embedImagePoolContainer = document.getElementById('embed-image-pool-container');
+const embedImagePool = document.getElementById('embed-image-pool');
+const addEmbedImageBtn = document.getElementById('add-embed-image');
+const previewContainer = document.getElementById('preview');
+const previewAvatar = document.getElementById('preview-avatar');
+const previewUsername = document.getElementById('preview-username');
+const previewContent = document.getElementById('preview-content');
+const previewEmbed = document.getElementById('preview-embed');
+const previewEmbedTitle = document.getElementById('preview-embed-title');
+const previewEmbedDescription = document.getElementById('preview-embed-description');
+const previewEmbedImage = document.getElementById('preview-embed-image');
+const previewFile = document.getElementById('preview-file');
+const addWebhookBtn = document.getElementById('add-webhook');
+
+// State
+let isSending = false;
+let stopRequested = false;
+let selectedFile = null;
+
+// Event Listeners
+fileInput.addEventListener('change', updateFileInfo);
+modeSelect.addEventListener('change', toggleSpamSettings);
+sendBtn.addEventListener('click', sendMessages);
+stopBtn.addEventListener('click', stopSending);
+previewBtn.addEventListener('click', updatePreview);
+randomUsernameCheckbox.addEventListener('change', toggleUsernamePool);
+addUsernameBtn.addEventListener('click', addUsernameField);
+usernamePool.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-username')) {
+        e.target.parentElement.remove();
+        if (usernamePool.children.length === 0) {
+            addUsernameField();
+        }
+    }
+});
+randomAvatarCheckbox.addEventListener('change', toggleAvatarPool);
+addAvatarBtn.addEventListener('click', addAvatarField);
+avatarPool.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-avatar')) {
+        e.target.parentElement.remove();
+        if (avatarPool.children.length === 0) {
+            addAvatarField();
+        }
+    }
+});
+enableEmbedCheckbox.addEventListener('change', toggleEmbedSettings);
+embedTitleInput.addEventListener('input', updatePreview);
+embedDescriptionInput.addEventListener('input', updatePreview);
+embedColorInput.addEventListener('input', updatePreview);
+embedImageInput.addEventListener('input', updatePreview);
+randomEmbedImageCheckbox.addEventListener('change', toggleEmbedImagePool);
+addEmbedImageBtn.addEventListener('click', addEmbedImageField);
+embedImagePool.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-embed-image')) {
+        e.target.parentElement.remove();
+        if (embedImagePool.children.length === 0) {
+            addEmbedImageField();
+        }
+    }
+});
+messageInput.addEventListener('input', updatePreview);
+usernameInput.addEventListener('input', updatePreview);
+avatarInput.addEventListener('input', updatePreview);
+addWebhookBtn.addEventListener('click', addWebhookField);
+webhookList.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-webhook')) {
+        e.target.parentElement.remove();
+        if (webhookList.children.length === 0) {
+            addWebhookField();
+        }
+    }
+});
+
+// Initialize
+toggleSpamSettings();
+toggleUsernamePool();
+toggleAvatarPool();
+toggleEmbedSettings();
+toggleEmbedImagePool();
+updatePreview();
+
+function addWebhookField() {
+    const div = document.createElement('div');
+    div.className = 'webhook-item';
+    div.innerHTML = `
+        <input type="text" class="webhook-url" placeholder="https://discord.com/api/webhooks/...">
+        <button class="remove-webhook">-</button>
+    `;
+    webhookList.appendChild(div);
+}
+
+function updateFileInfo() {
+    if (fileInput.files.length > 0) {
+        selectedFile = fileInput.files[0];
+        fileInfo.textContent = `Selected: ${selectedFile.name} (${formatFileSize(selectedFile.size)})`;
+    } else {
+        selectedFile = null;
+        fileInfo.textContent = 'No file selected';
+    }
+    updatePreview();
+}
+
+function toggleSpamSettings() {
+    spamSettings.style.display = modeSelect.value === 'spam' ? 'block' : 'none';
+}
+
+function toggleUsernamePool() {
+    usernamePoolContainer.style.display = randomUsernameCheckbox.checked ? 'block' : 'none';
+    updatePreview();
+}
+
+function toggleAvatarPool() {
+    avatarPoolContainer.style.display = randomAvatarCheckbox.checked ? 'block' : 'none';
+    updatePreview();
+}
+
+function toggleEmbedSettings() {
+    embedSettings.style.display = enableEmbedCheckbox.checked ? 'block' : 'none';
+    updatePreview();
+}
+
+function toggleEmbedImagePool() {
+    embedImagePoolContainer.style.display = randomEmbedImageCheckbox.checked ? 'block' : 'none';
+    updatePreview();
+}
+
+function addUsernameField() {
+    const div = document.createElement('div');
+    div.className = 'random-pool-item';
+    div.innerHTML = `
+        <input type="text" placeholder="Username">
+        <button class="remove-username">-</button>
+    `;
+    usernamePool.appendChild(div);
+}
+
+function addAvatarField() {
+    const div = document.createElement('div');
+    div.className = 'random-pool-item';
+    div.innerHTML = `
+        <input type="text" placeholder="Avatar URL">
+        <button class="remove-avatar">-</button>
+    `;
+    avatarPool.appendChild(div);
+}
+
+function addEmbedImageField() {
+    const div = document.createElement('div');
+    div.className = 'random-pool-item';
+    div.innerHTML = `
+        <input type="text" placeholder="Image URL">
+        <button class="remove-embed-image">-</button>
+    `;
+    embedImagePool.appendChild(div);
+}
+
+function getRandomUsername() {
+    const inputs = usernamePool.querySelectorAll('input');
+    const usernames = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
+    return usernames.length > 0 
+        ? usernames[Math.floor(Math.random() * usernames.length)]
+        : 'hacker_' + Math.floor(Math.random() * 1000);
+}
+
+function getRandomAvatar() {
+    const inputs = avatarPool.querySelectorAll('input');
+    const avatars = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
+    return avatars.length > 0 
+        ? avatars[Math.floor(Math.random() * avatars.length)]
+        : 'https://i.imgur.com/J7lY1Z5.png';
+}
+
+function getRandomEmbedImage() {
+    const inputs = embedImagePool.querySelectorAll('input');
+    const images = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
+    return images.length > 0 
+        ? images[Math.floor(Math.random() * images.length)]
+        : 'https://i.imgur.com/9mQ3Z6j.jpg';
+}
+
+function convertToMs(value, unit) {
+    switch(unit) {
+        case 'ms': return value;
+        case 's': return value * 1000;
+        case 'm': return value * 1000 * 60;
+        case 'h': return value * 1000 * 60 * 60;
+        case 'd': return value * 1000 * 60 * 60 * 24;
+        case 'w': return value * 1000 * 60 * 60 * 24 * 7;
+        case 'M': return value * 1000 * 60 * 60 * 24 * 30;
+        case 'y': return value * 1000 * 60 * 60 * 24 * 365;
+        default: return value * 1000;
+    }
+}
+
+function hexToDecimal(hex) {
+    return parseInt(hex.replace('#', ''), 16);
+}
+
+function updatePreview() {
+    previewContainer.classList.remove('hidden');
+    
+    // Set username
+    const username = usernameInput.value.trim() || 'Webhook User';
+    previewUsername.textContent = randomUsernameCheckbox.checked ? 'random_user' : username;
+    
+    // Set avatar
+    const avatar = avatarInput.value.trim();
+    if (randomAvatarCheckbox.checked) {
+        previewAvatar.style.backgroundImage = `url(${getRandomAvatar()})`;
+        previewAvatar.textContent = '';
+    } else if (avatar) {
+        previewAvatar.style.backgroundImage = `url(${avatar})`;
+        previewAvatar.textContent = '';
+    } else {
+        previewAvatar.style.backgroundImage = '';
+        previewAvatar.textContent = username.charAt(0).toUpperCase();
+    }
+    
+    // Set content
+    previewContent.textContent = messageInput.value.trim() || '[No message content]';
+    
+    // Set file preview
+    if (selectedFile) {
+        previewFile.classList.remove('hidden');
+        previewFile.textContent = `Attachment: ${selectedFile.name}`;
+    } else {
+        previewFile.classList.add('hidden');
+    }
+    
+    // Set embed preview
+    if (enableEmbedCheckbox.checked) {
+        previewEmbed.classList.remove('hidden');
+        
+        // Set embed title
+        const embedTitle = embedTitleInput.value.trim();
+        previewEmbedTitle.textContent = embedTitle || 'Embed Title';
+        previewEmbedTitle.style.display = embedTitle ? 'block' : 'none';
+        
+        // Set embed description
+        const embedDesc = embedDescriptionInput.value.trim();
+        previewEmbedDescription.textContent = embedDesc || 'Embed description goes here...';
+        previewEmbedDescription.style.display = embedDesc ? 'block' : 'none';
+        
+        // Set embed color
+        previewEmbed.style.borderLeftColor = embedColorInput.value;
+        
+        // Set embed image
+        const embedImage = randomEmbedImageCheckbox.checked 
+            ? getRandomEmbedImage() 
+            : embedImageInput.value.trim();
+        
+        if (embedImage) {
+            previewEmbedImage.classList.remove('hidden');
+            previewEmbedImage.src = embedImage;
+            previewEmbedImage.alt = 'Embed image';
+        } else {
+            previewEmbedImage.classList.add('hidden');
+        }
+    } else {
+        previewEmbed.classList.add('hidden');
+    }
+}
+
+async function sendMessages() {
+    const webhookElements = webhookList.querySelectorAll('.webhook-url');
+    const webhooks = Array.from(webhookElements).map(el => el.value.trim()).filter(Boolean);
+    
+    if (webhooks.length === 0) {
+        showStatus('Please add at least one webhook URL', 'error');
+        return;
+    }
+    
+    const message = messageInput.value.trim();
+    const username = usernameInput.value.trim();
+    const avatar = avatarInput.value.trim();
+    const tts = ttsCheckbox.checked;
+    const mode = modeSelect.value;
+    const count = mode === 'spam' ? parseInt(countInput.value) : 1;
+    const baseDelay = mode === 'spam' ? convertToMs(parseFloat(delayInput.value), delayUnit.value) : 0;
+    const delayVariation = mode === 'spam' ? convertToMs(parseFloat(delayVariationInput.value), variationUnit.value) : 0;
+    const threadName = threadNameInput.value.trim();
+    const enableEmbed = enableEmbedCheckbox.checked;
+    const embedTitle = embedTitleInput.value.trim();
+    const embedDescription = embedDescriptionInput.value.trim();
+    const embedColor = hexToDecimal(embedColorInput.value);
+    const embedImage = randomEmbedImageCheckbox.checked 
+        ? getRandomEmbedImage() 
+        : embedImageInput.value.trim();
+    
+    // Validate
+    if (!message && !selectedFile && !enableEmbed) {
+        showStatus('Please enter a message, add a file, or enable embed', 'error');
+        return;
+    }
+    
+    if (isNaN(count) || count < 1) {
+        showStatus('Invalid message count', 'error');
+        return;
+    }
+    
+    if (isNaN(baseDelay) || baseDelay < 0) {
+        showStatus('Invalid delay value', 'error');
+        return;
+    }
+    
+    if (isNaN(delayVariation) || delayVariation < 0) {
+        showStatus('Invalid delay variation', 'error');
+        return;
+    }
+    
+    // Start sending
+    isSending = true;
+    stopRequested = false;
+    sendBtn.disabled = true;
+    stopBtn.classList.remove('hidden');
+    
+    showStatus(`Sending ${count} messages to ${webhooks.length} webhooks...`, 'info');
+    
+    let success = 0;
+    let errors = 0;
+    
+    for (let i = 0; i < count; i++) {
+        if (stopRequested) break;
+        
+        try {
+            // Build payload
+            const payload = {
+                content: message || undefined,
+                username: randomUsernameCheckbox.checked ? getRandomUsername() : username || undefined,
+                avatar_url: randomAvatarCheckbox.checked ? getRandomAvatar() : avatar || undefined,
+                tts: tts
+            };
+            
+            // Add embed if enabled
+            if (enableEmbed) {
+                payload.embeds = [{
+                    title: embedTitle || undefined,
+                    description: embedDescription || undefined,
+                    color: embedColor || undefined,
+                    image: embedImage ? { url: embedImage } : undefined
+                }];
+            }
+            
+            // Add thread if specified
+            if (threadName) {
+                payload.thread_name = threadName;
+            }
+            
+            // Send to all webhooks
+            for (const webhook of webhooks) {
+                if (stopRequested) break;
+                
+                try {
+                    let response;
+                    
+                    if (selectedFile) {
+                        // Send with file
+                        const formData = new FormData();
+                        formData.append('payload_json', JSON.stringify(payload));
+                        formData.append('file', selectedFile);
+                        
+                        response = await fetch(webhook, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    } else {
+                        // Send without file
+                        response = await fetch(webhook, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                    
+                    if (response.ok) {
+                        success++;
+                        addHistory('success', message || '[File]' || '[Embed]', webhook);
+                    } else {
+                        errors++;
+                        const error = await response.json().catch(() => ({}));
+                        addHistory('error', message || '[File]' || '[Embed]', error.message || 'Unknown error', webhook);
+                    }
+                } catch (err) {
+                    errors++;
+                    addHistory('error', message || '[File]' || '[Embed]', err.message, webhook);
+                }
+            }
+            
+            showStatus(`Sent ${i+1}/${count} (${success} OK, ${errors} failed)`, 'info');
+            
+            // Delay if not last message
+            if (i < count - 1 && baseDelay > 0) {
+                const variation = delayVariation > 0 
+                    ? Math.floor(Math.random() * delayVariation * 2) - delayVariation
+                    : 0;
+                const actualDelay = Math.max(0, baseDelay + variation);
+                
+                await new Promise(resolve => setTimeout(resolve, actualDelay));
+            }
+        } catch (err) {
+            errors++;
+            addHistory('error', message || '[File]' || '[Embed]', err.message);
+            showStatus(`Error: ${err.message}`, 'error');
+        }
+    }
+    
+    // Done sending
+    isSending = false;
+    sendBtn.disabled = false;
+    stopBtn.classList.add('hidden');
+    
+    if (stopRequested) {
+        showStatus(`Stopped. Sent ${success} messages`, 'warning');
+    } else {
+        showStatus(`Done! ${success} sent, ${errors} failed`, success === (count * webhooks.length) ? 'success' : 'warning');
+    }
+}
+
+function stopSending() {
+    if (isSending) {
+        stopRequested = true;
+        stopBtn.disabled = true;
+        showStatus('Stopping...', 'warning');
+    }
+}
+
+function showStatus(msg, type) {
+    statusDiv.textContent = msg;
+    statusDiv.style.color = 
+        type === 'error' ? 'var(--error)' :
+        type === 'success' ? 'var(--hacker-green)' :
+        type === 'warning' ? 'var(--warning)' :
+        'var(--text)';
+    statusDiv.style.borderColor = 
+        type === 'error' ? 'var(--error)' :
+        type === 'success' ? 'var(--hacker-green)' :
+        type === 'warning' ? 'var(--warning)' :
+        'var(--border)';
+}
+
+function addHistory(type, message, error = '', webhook = '') {
+    const item = document.createElement('div');
+    item.className = `history-item ${type}`;
+    
+    const time = new Date().toLocaleTimeString();
+    const preview = message.length > 50 ? message.substring(0, 50) + '...' : message;
+    const webhookPreview = webhook ? ` (${webhook.substring(0, 20)}...)` : '';
+    
+    item.innerHTML = `
+        <div>[${time}]${webhookPreview} ${preview}</div>
+        ${error ? `<div style="color:var(--error)">${error}</div>` : ''}
+    `;
+    
+    historyDiv.prepend(item);
+    
+    // Limit history
+    if (historyDiv.children.length > 50) {
+        historyDiv.removeChild(historyDiv.lastChild);
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
