@@ -42,6 +42,7 @@ const variationUnit = document.getElementById('variation-unit');
 const sendBtn = document.getElementById('send');
 const stopBtn = document.getElementById('stop');
 const previewBtn = document.getElementById('preview-btn');
+const clearBtn = document.getElementById('clear-btn');
 const statusDiv = document.getElementById('status');
 const historyDiv = document.getElementById('history');
 const threadNameInput = document.getElementById('thread-name');
@@ -73,11 +74,20 @@ const previewEmbedDescription = document.getElementById('preview-embed-descripti
 const previewEmbedImage = document.getElementById('preview-embed-image');
 const previewFile = document.getElementById('preview-file');
 const addWebhookBtn = document.getElementById('add-webhook');
+const terminalBtn = document.getElementById('terminal-btn');
+const terminal = document.getElementById('terminal');
+const closeTerminalBtn = document.getElementById('close-terminal');
+const terminalOutput = document.getElementById('terminal-output');
+const terminalInput = document.getElementById('terminal-input');
+const themeBtn = document.getElementById('theme-btn');
 
 // State
 let isSending = false;
 let stopRequested = false;
 let selectedFile = null;
+let isDarkMode = true;
+let terminalHistory = [];
+let historyIndex = -1;
 
 // Event Listeners
 fileInput.addEventListener('change', updateFileInfo);
@@ -85,6 +95,7 @@ modeSelect.addEventListener('change', toggleSpamSettings);
 sendBtn.addEventListener('click', sendMessages);
 stopBtn.addEventListener('click', stopSending);
 previewBtn.addEventListener('click', updatePreview);
+clearBtn.addEventListener('click', clearHistory);
 randomUsernameCheckbox.addEventListener('change', toggleUsernamePool);
 addUsernameBtn.addEventListener('click', addUsernameField);
 usernamePool.addEventListener('click', function(e) {
@@ -132,6 +143,10 @@ webhookList.addEventListener('click', function(e) {
         }
     }
 });
+terminalBtn.addEventListener('click', toggleTerminal);
+closeTerminalBtn.addEventListener('click', toggleTerminal);
+terminalInput.addEventListener('keydown', handleTerminalInput);
+themeBtn.addEventListener('click', toggleTheme);
 
 // Initialize
 toggleSpamSettings();
@@ -140,13 +155,14 @@ toggleAvatarPool();
 toggleEmbedSettings();
 toggleEmbedImagePool();
 updatePreview();
+addTerminalMessage('System initialized. Type "help" for commands.');
 
 function addWebhookField() {
     const div = document.createElement('div');
     div.className = 'webhook-item';
     div.innerHTML = `
         <input type="text" class="webhook-url" placeholder="https://discord.com/api/webhooks/...">
-        <button class="remove-webhook">-</button>
+        <button class="remove-webhook hacker-btn">-</button>
     `;
     webhookList.appendChild(div);
 }
@@ -163,7 +179,7 @@ function updateFileInfo() {
 }
 
 function toggleSpamSettings() {
-    spamSettings.style.display = modeSelect.value === 'spam' ? 'block' : 'none';
+    spamSettings.style.display = modeSelect.value === 'once' ? 'none' : 'block';
 }
 
 function toggleUsernamePool() {
@@ -190,8 +206,8 @@ function addUsernameField() {
     const div = document.createElement('div');
     div.className = 'random-pool-item';
     div.innerHTML = `
-        <input type="text" placeholder="Username">
-        <button class="remove-username">-</button>
+        <input type="text" placeholder="Username" class="hacker-input">
+        <button class="remove-username hacker-btn">-</button>
     `;
     usernamePool.appendChild(div);
 }
@@ -200,8 +216,8 @@ function addAvatarField() {
     const div = document.createElement('div');
     div.className = 'random-pool-item';
     div.innerHTML = `
-        <input type="text" placeholder="Avatar URL">
-        <button class="remove-avatar">-</button>
+        <input type="text" placeholder="Avatar URL" class="hacker-input">
+        <button class="remove-avatar hacker-btn">-</button>
     `;
     avatarPool.appendChild(div);
 }
@@ -210,8 +226,8 @@ function addEmbedImageField() {
     const div = document.createElement('div');
     div.className = 'random-pool-item';
     div.innerHTML = `
-        <input type="text" placeholder="Image URL">
-        <button class="remove-embed-image">-</button>
+        <input type="text" placeholder="Image URL" class="hacker-input">
+        <button class="remove-embed-image hacker-btn">-</button>
     `;
     embedImagePool.appendChild(div);
 }
@@ -227,9 +243,10 @@ function getRandomUsername() {
 function getRandomAvatar() {
     const inputs = avatarPool.querySelectorAll('input');
     const avatars = Array.from(inputs).map(input => input.value.trim()).filter(Boolean);
-    return avatars.length > 0 
-        ? avatars[Math.floor(Math.random() * avatars.length)]
-        : 'https://i.imgur.com/J7lY1Z5.png';
+    if (avatars.length === 0) return 'https://i.imgur.com/J7lY1Z5.png';
+    
+    const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+    return randomAvatar || 'https://i.imgur.com/J7lY1Z5.png';
 }
 
 function getRandomEmbedImage() {
@@ -263,12 +280,13 @@ function updatePreview() {
     
     // Set username
     const username = usernameInput.value.trim() || 'Webhook User';
-    previewUsername.textContent = randomUsernameCheckbox.checked ? 'random_user' : username;
+    previewUsername.textContent = randomUsernameCheckbox.checked ? getRandomUsername() : username;
     
     // Set avatar
     const avatar = avatarInput.value.trim();
     if (randomAvatarCheckbox.checked) {
-        previewAvatar.style.backgroundImage = `url(${getRandomAvatar()})`;
+        const randomAvatar = getRandomAvatar();
+        previewAvatar.style.backgroundImage = `url(${randomAvatar})`;
         previewAvatar.textContent = '';
     } else if (avatar) {
         previewAvatar.style.backgroundImage = `url(${avatar})`;
@@ -329,6 +347,7 @@ async function sendMessages() {
     
     if (webhooks.length === 0) {
         showStatus('Please add at least one webhook URL', 'error');
+        addTerminalMessage('Error: No webhook URLs provided');
         return;
     }
     
@@ -337,9 +356,9 @@ async function sendMessages() {
     const avatar = avatarInput.value.trim();
     const tts = ttsCheckbox.checked;
     const mode = modeSelect.value;
-    const count = mode === 'spam' ? parseInt(countInput.value) : 1;
-    const baseDelay = mode === 'spam' ? convertToMs(parseFloat(delayInput.value), delayUnit.value) : 0;
-    const delayVariation = mode === 'spam' ? convertToMs(parseFloat(delayVariationInput.value), variationUnit.value) : 0;
+    const count = mode === 'once' ? 1 : parseInt(countInput.value);
+    const baseDelay = mode === 'once' ? 0 : convertToMs(parseFloat(delayInput.value), delayUnit.value);
+    const delayVariation = mode === 'once' ? 0 : convertToMs(parseFloat(delayVariationInput.value), variationUnit.value);
     const threadName = threadNameInput.value.trim();
     const enableEmbed = enableEmbedCheckbox.checked;
     const embedTitle = embedTitleInput.value.trim();
@@ -352,21 +371,25 @@ async function sendMessages() {
     // Validate
     if (!message && !selectedFile && !enableEmbed) {
         showStatus('Please enter a message, add a file, or enable embed', 'error');
+        addTerminalMessage('Error: No content to send');
         return;
     }
     
     if (isNaN(count) || count < 1) {
         showStatus('Invalid message count', 'error');
+        addTerminalMessage('Error: Invalid message count');
         return;
     }
     
     if (isNaN(baseDelay) || baseDelay < 0) {
         showStatus('Invalid delay value', 'error');
+        addTerminalMessage('Error: Invalid delay value');
         return;
     }
     
     if (isNaN(delayVariation) || delayVariation < 0) {
         showStatus('Invalid delay variation', 'error');
+        addTerminalMessage('Error: Invalid delay variation');
         return;
     }
     
@@ -377,6 +400,7 @@ async function sendMessages() {
     stopBtn.classList.remove('hidden');
     
     showStatus(`Sending ${count} messages to ${webhooks.length} webhooks...`, 'info');
+    addTerminalMessage(`Starting ${mode} attack with ${count} messages`);
     
     let success = 0;
     let errors = 0;
@@ -437,14 +461,17 @@ async function sendMessages() {
                     if (response.ok) {
                         success++;
                         addHistory('success', message || '[File]' || '[Embed]', webhook);
+                        addTerminalMessage(`Message ${i+1} sent successfully to ${webhook.substring(0, 30)}...`);
                     } else {
                         errors++;
                         const error = await response.json().catch(() => ({}));
                         addHistory('error', message || '[File]' || '[Embed]', error.message || 'Unknown error', webhook);
+                        addTerminalMessage(`Error sending message ${i+1}: ${error.message || 'Unknown error'}`);
                     }
                 } catch (err) {
                     errors++;
                     addHistory('error', message || '[File]' || '[Embed]', err.message, webhook);
+                    addTerminalMessage(`Error: ${err.message}`);
                 }
             }
             
@@ -463,6 +490,7 @@ async function sendMessages() {
             errors++;
             addHistory('error', message || '[File]' || '[Embed]', err.message);
             showStatus(`Error: ${err.message}`, 'error');
+            addTerminalMessage(`Fatal error: ${err.message}`);
         }
     }
     
@@ -473,8 +501,10 @@ async function sendMessages() {
     
     if (stopRequested) {
         showStatus(`Stopped. Sent ${success} messages`, 'warning');
+        addTerminalMessage(`Attack stopped. ${success} messages sent`);
     } else {
         showStatus(`Done! ${success} sent, ${errors} failed`, success === (count * webhooks.length) ? 'success' : 'warning');
+        addTerminalMessage(`Attack completed. ${success} successful, ${errors} failed`);
     }
 }
 
@@ -483,21 +513,13 @@ function stopSending() {
         stopRequested = true;
         stopBtn.disabled = true;
         showStatus('Stopping...', 'warning');
+        addTerminalMessage('Stopping attack...');
     }
 }
 
 function showStatus(msg, type) {
     statusDiv.textContent = msg;
-    statusDiv.style.color = 
-        type === 'error' ? 'var(--error)' :
-        type === 'success' ? 'var(--hacker-green)' :
-        type === 'warning' ? 'var(--warning)' :
-        'var(--text)';
-    statusDiv.style.borderColor = 
-        type === 'error' ? 'var(--error)' :
-        type === 'success' ? 'var(--hacker-green)' :
-        type === 'warning' ? 'var(--warning)' :
-        'var(--border)';
+    statusDiv.className = `status ${type}`;
 }
 
 function addHistory(type, message, error = '', webhook = '') {
@@ -510,7 +532,7 @@ function addHistory(type, message, error = '', webhook = '') {
     
     item.innerHTML = `
         <div>[${time}]${webhookPreview} ${preview}</div>
-        ${error ? `<div style="color:var(--error)">${error}</div>` : ''}
+        ${error ? `<div style="color:var(--${type === 'error' ? 'error' : 'text'})">${error}</div>` : ''}
     `;
     
     historyDiv.prepend(item);
@@ -521,10 +543,112 @@ function addHistory(type, message, error = '', webhook = '') {
     }
 }
 
+function clearHistory() {
+    historyDiv.innerHTML = '';
+    addTerminalMessage('Message history cleared');
+}
+
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Terminal functions
+function toggleTerminal() {
+    terminal.classList.toggle('hidden');
+}
+
+function addTerminalMessage(message, type = 'info') {
+    const messageElement = document.createElement('div');
+    messageElement.className = type;
+    messageElement.textContent = `> ${message}`;
+    terminalOutput.appendChild(messageElement);
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+function handleTerminalInput(e) {
+    if (e.key === 'Enter') {
+        const command = terminalInput.value.trim();
+        terminalInput.value = '';
+        
+        if (command) {
+            terminalHistory.push(command);
+            historyIndex = terminalHistory.length;
+            addTerminalMessage(command, 'input');
+            processCommand(command);
+        }
+    } else if (e.key === 'ArrowUp') {
+        if (terminalHistory.length > 0 && historyIndex > 0) {
+            historyIndex--;
+            terminalInput.value = terminalHistory[historyIndex];
+        }
+    } else if (e.key === 'ArrowDown') {
+        if (terminalHistory.length > 0 && historyIndex < terminalHistory.length - 1) {
+            historyIndex++;
+            terminalInput.value = terminalHistory[historyIndex];
+        } else {
+            historyIndex = terminalHistory.length;
+            terminalInput.value = '';
+        }
+    }
+}
+
+function processCommand(command) {
+    const args = command.split(' ');
+    const cmd = args[0].toLowerCase();
+    
+    switch(cmd) {
+        case 'help':
+            addTerminalMessage('Available commands:');
+            addTerminalMessage('help - Show this help message');
+            addTerminalMessage('clear - Clear terminal');
+            addTerminalMessage('start - Start sending messages');
+            addTerminalMessage('stop - Stop sending messages');
+            addTerminalMessage('status - Show current status');
+            addTerminalMessage('theme - Toggle dark/light mode');
+            break;
+            
+        case 'clear':
+            terminalOutput.innerHTML = '';
+            break;
+            
+        case 'start':
+            sendMessages();
+            break;
+            
+        case 'stop':
+            stopSending();
+            break;
+            
+        case 'status':
+            addTerminalMessage(`Current status: ${statusDiv.textContent}`);
+            break;
+            
+        case 'theme':
+            toggleTheme();
+            break;
+            
+        default:
+            addTerminalMessage(`Unknown command: ${cmd}`, 'error');
+            break;
+    }
+}
+
+function toggleTheme() {
+    isDarkMode = !isDarkMode;
+    
+    if (isDarkMode) {
+        document.documentElement.style.setProperty('--dark-bg', '#0a0a0a');
+        document.documentElement.style.setProperty('--darker-bg', '#050505');
+        document.documentElement.style.setProperty('--text', '#e0e0e0');
+        themeBtn.textContent = 'Dark Mode';
+    } else {
+        document.documentElement.style.setProperty('--dark-bg', '#f0f0f0');
+        document.documentElement.style.setProperty('--darker-bg', '#e0e0e0');
+        document.documentElement.style.setProperty('--text', '#333333');
+        themeBtn.textContent = 'Light Mode';
+    }
 }
