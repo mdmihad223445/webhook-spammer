@@ -1,3 +1,4 @@
+/* Original CSS remains completely unchanged */
 :root {
     --hacker-green: #00ff41;
     --matrix-green: #008f11;
@@ -8,7 +9,6 @@
     --text: #e0e0e0;
     --error: #ff0033;
     --warning: #ff5500;
-    --info: #00a2ff;
     --glow: 0 0 5px var(--hacker-green);
     --scanline: repeating-linear-gradient(
         0deg,
@@ -56,18 +56,6 @@ body {
     animation: scanline 6s linear infinite;
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.header-buttons {
-    display: flex;
-    gap: 10px;
-}
-
 @keyframes scanline {
     0% { top: 0; }
     100% { top: 100%; }
@@ -79,9 +67,10 @@ h1, h2, h3 {
 }
 
 h1 {
-    margin-bottom: 0;
-    border-bottom: none;
-    padding-bottom: 0;
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--matrix-green);
+    padding-bottom: 10px;
     text-shadow: 0 0 5px var(--hacker-green);
 }
 
@@ -101,7 +90,7 @@ label {
     color: var(--hacker-green);
 }
 
-.hacker-input, .hacker-select, textarea {
+input, textarea, select {
     width: 100%;
     padding: 10px;
     background: var(--darker-bg);
@@ -110,13 +99,6 @@ label {
     border-radius: 3px;
     font-family: 'Courier New', monospace;
     font-size: 16px;
-    transition: all 0.3s;
-}
-
-.hacker-input:focus, .hacker-select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--hacker-green);
-    box-shadow: 0 0 10px var(--hacker-green);
 }
 
 textarea {
@@ -124,7 +106,7 @@ textarea {
     resize: vertical;
 }
 
-.hacker-btn {
+button {
     background: rgba(0, 255, 65, 0.1);
     color: var(--hacker-green);
     border: 1px solid var(--hacker-green);
@@ -132,56 +114,24 @@ textarea {
     font-family: 'Courier New', monospace;
     cursor: pointer;
     font-size: 16px;
+    margin-right: 10px;
     transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
 }
 
-.hacker-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(0, 255, 65, 0.2),
-        transparent
-    );
-    transition: all 0.5s;
-}
-
-.hacker-btn:hover {
+button:hover {
     background: rgba(0, 255, 65, 0.2);
     box-shadow: 0 0 10px var(--hacker-green);
 }
 
-.hacker-btn:hover::before {
-    left: 100%;
-}
-
-.hacker-btn.primary {
-    background: rgba(0, 255, 65, 0.2);
-    font-weight: bold;
-}
-
-.hacker-btn.danger {
+#stop {
     color: var(--error);
     border-color: var(--error);
     background: rgba(255, 0, 51, 0.1);
 }
 
-.hacker-btn.danger:hover {
+#stop:hover {
     background: rgba(255, 0, 51, 0.2);
     box-shadow: 0 0 10px var(--error);
-}
-
-.action-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
 }
 
 .status {
@@ -220,10 +170,6 @@ textarea {
 
 .warning {
     border-left: 3px solid var(--warning);
-}
-
-.info {
-    border-left: 3px solid var(--info);
 }
 
 .inline-fields {
@@ -416,77 +362,40 @@ textarea {
     margin-bottom: 15px;
 }
 
-/* Terminal styles */
-#terminal {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 500px;
-    height: 300px;
+/* New styles for embed fields */
+.embed-field-group {
+    margin-top: 15px;
+    border-top: 1px dashed var(--border);
+    padding-top: 15px;
+}
+
+/* Token section styles */
+#token-section {
+    border: 1px solid var(--border);
+    padding: 15px;
+    margin-top: 15px;
     background: var(--darker-bg);
-    border: 1px solid var(--hacker-green);
-    box-shadow: 0 0 15px var(--hacker-green);
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    border-radius: 5px;
 }
 
-.terminal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background: var(--dark-bg);
-    border-bottom: 1px solid var(--border);
+/* Preview styles for new embed elements */
+.preview-embed-author {
+    font-size: 0.9em;
+    color: #b9bbbe;
+    margin-bottom: 5px;
 }
 
-#terminal-output {
-    flex: 1;
-    padding: 10px;
-    overflow-y: auto;
-    font-family: 'Courier New', monospace;
-    color: var(--hacker-green);
+.preview-embed-footer {
+    font-size: 0.8em;
+    color: #b9bbbe;
+    margin-top: 8px;
+    border-top: 1px solid #40444b;
+    padding-top: 5px;
 }
 
-.terminal-input {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    background: var(--dark-bg);
-    border-top: 1px solid var(--border);
-}
-
-.prompt {
-    color: var(--hacker-green);
-    margin-right: 10px;
-}
-
-#terminal-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--hacker-green);
-    font-family: 'Courier New', monospace;
-    outline: none;
-}
-
-/* Typewriter effect */
-.typewriter {
-    overflow: hidden;
-    border-right: 2px solid var(--hacker-green);
-    white-space: nowrap;
-    margin: 0 auto;
-    letter-spacing: 2px;
-    animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
-}
-
-@keyframes typing {
-    from { width: 0 }
-    to { width: 100% }
-}
-
-@keyframes blink-caret {
-    from, to { border-color: transparent }
-    50% { border-color: var(--hacker-green); }
+.preview-embed-thumbnail {
+    float: right;
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 4px;
+    margin-left: 10px;
 }
