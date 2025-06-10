@@ -13,87 +13,53 @@
     </div>
     
     <div class="container">
-        <div class="header">
-            <h1>Discord Webhook Tool <span class="blink">_</span></h1>
-            <div class="header-buttons">
-                <button id="terminal-btn" class="hacker-btn">Terminal</button>
-                <button id="theme-btn" class="hacker-btn">Dark Mode</button>
-            </div>
-        </div>
+        <h1>Discord Webhook Tool <span class="blink">_</span></h1>
         
         <div class="section">
-            <h2>Basic Settings</h2>
+            <h2>Connection Method</h2>
+            <div class="input-group">
+                <label for="connection-type">Select Connection Type:</label>
+                <select id="connection-type">
+                    <option value="webhook">Webhook</option>
+                    <option value="token">User/Bot Token</option>
+                </select>
+            </div>
             
-            <div id="webhook-container" class="input-group">
+            <div id="webhook-container">
                 <label>Webhook URLs:</label>
                 <div class="webhook-list" id="webhook-list">
                     <div class="webhook-item">
                         <input type="text" class="webhook-url" placeholder="https://discord.com/api/webhooks/...">
-                        <button class="remove-webhook hacker-btn">-</button>
+                        <button class="remove-webhook">-</button>
                     </div>
                 </div>
-                <button id="add-webhook" class="hacker-btn">+ Add Webhook</button>
+                <button id="add-webhook">+ Add Webhook</button>
             </div>
             
+            <div id="token-section" class="hidden">
+                <div class="input-group">
+                    <label for="token">Token:</label>
+                    <input type="password" id="token" placeholder="User or Bot Token">
+                </div>
+                <div class="input-group">
+                    <label for="target-id">Target ID:</label>
+                    <input type="text" id="target-id" placeholder="User ID or Channel ID">
+                </div>
+                <div class="input-group">
+                    <label for="message-type">Message Type:</label>
+                    <select id="message-type">
+                        <option value="dm">Direct Message</option>
+                        <option value="channel">Channel Message</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Message Content</h2>
             <div class="input-group">
-                <label for="message">Message Content:</label>
-                <textarea id="message" placeholder="Type your message here..."></textarea>
-            </div>
-            
-            <div class="inline-fields">
-                <div class="input-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" placeholder="Custom username">
-                </div>
-                
-                <div class="input-group">
-                    <label for="avatar">Avatar URL:</label>
-                    <input type="text" id="avatar" placeholder="https://example.com/avatar.png">
-                </div>
-            </div>
-            
-            <div class="checkbox-group">
-                <input type="checkbox" id="random-username">
-                <label for="random-username">Randomize username for each message</label>
-            </div>
-            
-            <div id="username-pool-container" class="hidden">
-                <label>Username Pool (one per line):</label>
-                <div class="random-pool" id="username-pool">
-                    <div class="random-pool-item">
-                        <input type="text" placeholder="Username" value="root">
-                        <button class="remove-username hacker-btn">-</button>
-                    </div>
-                    <div class="random-pool-item">
-                        <input type="text" placeholder="Username" value="admin">
-                        <button class="remove-username hacker-btn">-</button>
-                    </div>
-                    <div class="random-pool-item">
-                        <input type="text" placeholder="Username" value="hacker">
-                        <button class="remove-username hacker-btn">-</button>
-                    </div>
-                </div>
-                <button id="add-username" class="hacker-btn">+ Add Username</button>
-            </div>
-            
-            <div class="checkbox-group">
-                <input type="checkbox" id="random-avatar">
-                <label for="random-avatar">Use random avatar for each message</label>
-            </div>
-            
-            <div id="avatar-pool-container" class="hidden">
-                <label>Avatar URL Pool (one per line):</label>
-                <div class="random-pool" id="avatar-pool">
-                    <div class="random-pool-item">
-                        <input type="text" placeholder="Avatar URL" value="https://i.imgur.com/J7lY1Z5.png">
-                        <button class="remove-avatar hacker-btn">-</button>
-                    </div>
-                    <div class="random-pool-item">
-                        <input type="text" placeholder="Avatar URL" value="https://i.imgur.com/3Q8TnQm.png">
-                        <button class="remove-avatar hacker-btn">-</button>
-                    </div>
-                </div>
-                <button id="add-avatar" class="hacker-btn">+ Add Avatar URL</button>
+                <label for="message">Message:</label>
+                <textarea id="message" placeholder="Type your message here... Supports {mention}, {server}, {user(proper)}, {server(members)}, {random:option1~option2}"></textarea>
             </div>
             
             <div class="input-group">
@@ -110,7 +76,6 @@
         
         <div class="section">
             <h2>Embed Settings</h2>
-            
             <div class="checkbox-group">
                 <input type="checkbox" id="enable-embed">
                 <label for="enable-embed">Enable Embed</label>
@@ -118,114 +83,128 @@
             
             <div id="embed-settings" class="hidden">
                 <div class="input-group">
-                    <label for="embed-title">Embed Title:</label>
+                    <label for="embed-title">Title:</label>
                     <input type="text" id="embed-title" placeholder="Embed title">
                 </div>
                 
                 <div class="input-group">
-                    <label for="embed-description">Embed Description:</label>
+                    <label for="embed-url">Title URL:</label>
+                    <input type="text" id="embed-url" placeholder="https://example.com">
+                </div>
+                
+                <div class="input-group">
+                    <label for="embed-description">Description:</label>
                     <textarea id="embed-description" placeholder="Embed description"></textarea>
                 </div>
                 
                 <div class="input-group">
-                    <label for="embed-color">Embed Color:</label>
+                    <label for="embed-color">Color:</label>
                     <input type="color" id="embed-color" value="#00ff41">
                 </div>
                 
-                <div class="input-group">
-                    <label for="embed-image">Embed Image URL:</label>
-                    <input type="text" id="embed-image" placeholder="https://example.com/image.png">
-                </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="random-embed-image">
-                    <label for="random-embed-image">Use random image for embed</label>
-                </div>
-                
-                <div id="embed-image-pool-container" class="hidden">
-                    <label>Embed Image URL Pool (one per line):</label>
-                    <div class="random-pool" id="embed-image-pool">
-                        <div class="random-pool-item">
-                            <input type="text" placeholder="Image URL" value="https://i.imgur.com/9mQ3Z6j.jpg">
-                            <button class="remove-embed-image hacker-btn">-</button>
-                        </div>
-                        <div class="random-pool-item">
-                            <input type="text" placeholder="Image URL" value="https://i.imgur.com/4T2Xw9L.jpg">
-                            <button class="remove-embed-image hacker-btn">-</button>
-                        </div>
+                <div class="embed-field-group">
+                    <h3>Author</h3>
+                    <div class="input-group">
+                        <label for="embed-author-name">Name:</label>
+                        <input type="text" id="embed-author-name" placeholder="Author name">
                     </div>
-                    <button id="add-embed-image" class="hacker-btn">+ Add Image URL</button>
+                    
+                    <div class="input-group">
+                        <label for="embed-author-url">URL:</label>
+                        <input type="text" id="embed-author-url" placeholder="https://example.com/author">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="embed-author-icon">Icon URL:</label>
+                        <input type="text" id="embed-author-icon" placeholder="https://example.com/icon.png">
+                    </div>
+                </div>
+                
+                <div class="embed-field-group">
+                    <h3>Media</h3>
+                    <div class="input-group">
+                        <label for="embed-image">Image URL:</label>
+                        <input type="text" id="embed-image" placeholder="https://example.com/image.png">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="embed-thumbnail">Thumbnail URL:</label>
+                        <input type="text" id="embed-thumbnail" placeholder="https://example.com/thumbnail.png">
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="random-embed-image">
+                        <label for="random-embed-image">Use random image</label>
+                    </div>
+                    
+                    <div id="embed-image-pool-container" class="hidden">
+                        <label>Image URL Pool (one per line):</label>
+                        <div class="random-pool" id="embed-image-pool">
+                            <div class="random-pool-item">
+                                <input type="text" placeholder="Image URL" value="https://i.imgur.com/9mQ3Z6j.jpg">
+                                <button class="remove-embed-image">-</button>
+                            </div>
+                            <div class="random-pool-item">
+                                <input type="text" placeholder="Image URL" value="https://i.imgur.com/4T2Xw9L.jpg">
+                                <button class="remove-embed-image">-</button>
+                            </div>
+                        </div>
+                        <button id="add-embed-image">+ Add Image URL</button>
+                    </div>
+                </div>
+                
+                <div class="embed-field-group">
+                    <h3>Footer</h3>
+                    <div class="input-group">
+                        <label for="embed-footer-text">Text:</label>
+                        <input type="text" id="embed-footer-text" placeholder="Footer text">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="embed-footer-icon">Icon URL:</label>
+                        <input type="text" id="embed-footer-icon" placeholder="https://example.com/footer.png">
+                    </div>
                 </div>
             </div>
         </div>
         
         <div class="section">
             <h2>Send Options</h2>
-            
             <div class="input-group">
-                <label>Send Mode:</label>
-                <select id="mode" class="hacker-select">
+                <label for="mode">Send Mode:</label>
+                <select id="mode">
                     <option value="once">Send once</option>
                     <option value="spam">Spam mode</option>
-                    <option value="flood">Flood mode</option>
-                    <option value="slowloris">Slowloris attack</option>
                 </select>
             </div>
             
             <div id="spam-settings">
                 <div class="input-group">
                     <label for="count">Message Count:</label>
-                    <input type="number" id="count" min="1" value="10" class="hacker-input">
+                    <input type="number" id="count" min="1" value="10">
                 </div>
                 
                 <div class="input-group">
                     <label for="delay">Delay:</label>
                     <div class="time-unit">
-                        <input type="number" id="delay" min="0" value="1" class="hacker-input">
-                        <select id="delay-unit" class="hacker-select">
+                        <input type="number" id="delay" min="0" value="1">
+                        <select id="delay-unit">
                             <option value="ms">Milliseconds</option>
                             <option value="s" selected>Seconds</option>
                             <option value="m">Minutes</option>
                             <option value="h">Hours</option>
                             <option value="d">Days</option>
-                            <option value="w">Weeks</option>
-                            <option value="M">Months</option>
-                            <option value="y">Years</option>
                         </select>
                     </div>
                 </div>
-                
-                <div class="input-group">
-                    <label for="delay-variation">Delay Variation (±):</label>
-                    <div class="time-unit">
-                        <input type="number" id="delay-variation" min="0" value="0" class="hacker-input">
-                        <select id="variation-unit" class="hacker-select">
-                            <option value="ms">Milliseconds</option>
-                            <option value="s" selected>Seconds</option>
-                            <option value="m">Minutes</option>
-                            <option value="h">Hours</option>
-                            <option value="d">Days</option>
-                            <option value="w">Weeks</option>
-                            <option value="M">Months</option>
-                            <option value="y">Years</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label for="thread-name">Thread Name (optional):</label>
-                <input type="text" id="thread-name" placeholder="Thread name" class="hacker-input">
             </div>
         </div>
         
         <div class="section">
-            <div class="action-buttons">
-                <button id="send" class="hacker-btn primary">Send Messages</button>
-                <button id="stop" class="hacker-btn danger hidden">Stop Sending</button>
-                <button id="preview-btn" class="hacker-btn">Preview Message</button>
-                <button id="clear-btn" class="hacker-btn">Clear History</button>
-            </div>
+            <button id="send">Send Messages</button>
+            <button id="stop" class="hidden">Stop Sending</button>
+            <button id="preview-btn">Preview Message</button>
+            <button id="test-btn">Test Connection</button>
             
             <div class="status" id="status">Ready</div>
         </div>
@@ -242,9 +221,12 @@
                         Message content will appear here...
                     </div>
                     <div class="preview-embed hidden" id="preview-embed">
+                        <div class="preview-embed-author hidden" id="preview-embed-author"></div>
                         <div class="preview-embed-title" id="preview-embed-title">Embed Title</div>
                         <div class="preview-embed-description" id="preview-embed-description">Embed description will appear here...</div>
+                        <img class="preview-embed-thumbnail hidden" id="preview-embed-thumbnail">
                         <img class="preview-embed-image hidden" id="preview-embed-image">
+                        <div class="preview-embed-footer hidden" id="preview-embed-footer"></div>
                     </div>
                     <div class="preview-file hidden" id="preview-file">Attachment: filename.ext</div>
                 </div>
@@ -254,18 +236,6 @@
         <div class="section">
             <h2>Message History</h2>
             <div id="history"></div>
-        </div>
-    </div>
-
-    <div id="terminal" class="hidden">
-        <div class="terminal-header">
-            <h3>System Terminal</h3>
-            <button id="close-terminal" class="hacker-btn danger">X</button>
-        </div>
-        <div id="terminal-output"></div>
-        <div class="terminal-input">
-            <span class="prompt">root@webhook-tool:~$</span>
-            <input type="text" id="terminal-input" autocomplete="off">
         </div>
     </div>
 
