@@ -76,11 +76,22 @@ const tokenInput = document.getElementById('token');
 const targetIdInput = document.getElementById('target-id');
 const messageTypeSelect = document.getElementById('message-type');
 const addEmbedImageBtn = document.getElementById('add-embed-image');
+const callTokenInput = document.getElementById('call-token');
+const callUserList = document.getElementById('call-user-list');
+const callCountInput = document.getElementById('call-count');
+const callDelayInput = document.getElementById('call-delay');
+const callRingtoneCheckbox = document.getElementById('call-ringtone');
+const startCallSpamBtn = document.getElementById('start-call-spam');
+const stopCallSpamBtn = document.getElementById('stop-call-spam');
+const callStatusDiv = document.getElementById('call-status');
+const addCallUserBtn = document.getElementById('add-call-user');
 
 // State
 let isSending = false;
 let stopRequested = false;
 let selectedFile = null;
+let isCallSpamming = false;
+let stopCallSpamRequested = false;
 
 // Event Listeners
 connectionType.addEventListener('change', function() {
@@ -111,6 +122,9 @@ previewBtn.addEventListener('click', updatePreview);
 testBtn.addEventListener('click', testConnection);
 addWebhookBtn.addEventListener('click', addWebhookField);
 addEmbedImageBtn.addEventListener('click', addEmbedImageField);
+addCallUserBtn.addEventListener('click', addCallUserField);
+startCallSpamBtn.addEventListener('click', startCallSpam);
+stopCallSpamBtn.addEventListener('click', stopCallSpam);
 
 // Add event listeners for all embed fields
 const embedFields = [
@@ -161,6 +175,24 @@ function addEmbedImageField() {
     });
 }
 
+function addCallUserField() {
+    const div = document.createElement('div');
+    div.className = 'webhook-item';
+    div.innerHTML = `
+        <input type="text" class="call-user-id" placeholder="User ID">
+        <button class="remove-call-user">-</button>
+    `;
+    callUserList.appendChild(div);
+    
+    div.querySelector('.remove-call-user').addEventListener('click', function() {
+        if (callUserList.children.length > 1) {
+            div.remove();
+        } else {
+            showCallStatus('You must have at least one user ID', 'error');
+        }
+    });
+}
+
 function updateFileInfo() {
     if (fileInput.files.length > 0) {
         selectedFile = fileInput.files[0];
@@ -170,6 +202,14 @@ function updateFileInfo() {
         fileInfo.textContent = 'No file selected';
     }
     updatePreview();
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
 }
 
 function getRandomImage() {
@@ -284,6 +324,66 @@ function addOrdinalSuffix(num) {
     if (j === 2 && k !== 12) return num + "nd";
     if (j === 3 && k !== 13) return num + "rd";
     return num + "th";
+}
+
+function hexToDecimal(hex) {
+    return parseInt(hex.replace('#', ''), 16);
+}
+
+function convertToMs(value, unit) {
+    switch (unit) {
+        case 'ms': return value;
+        case 's': return value * 1000;
+        case 'm': return value * 1000 * 60;
+        case 'h': return value * 1000 * 60 * 60;
+        case 'd': return value * 1000 * 60 * 60 * 24;
+        default: return value * 1000;
+    }
+}
+
+function showStatus(message, type = 'info') {
+    statusDiv.textContent = message;
+    statusDiv.className = 'status';
+    
+    if (type === 'error') {
+        statusDiv.classList.add('error');
+    } else if (type === 'success') {
+        statusDiv.classList.add('success');
+    } else if (type === 'warning') {
+        statusDiv.classList.add('warning');
+    }
+}
+
+function showCallStatus(message, type = 'info') {
+    callStatusDiv.textContent = message;
+    callStatusDiv.className = 'status';
+    
+    if (type === 'error') {
+        callStatusDiv.classList.add('error');
+    } else if (type === 'success') {
+        callStatusDiv.classList.add('success');
+    } else if (type === 'warning') {
+        callStatusDiv.classList.add('warning');
+    }
+}
+
+function addHistory(type, message, details, target = '') {
+    const div = document.createElement('div');
+    div.className = `history-item ${type}`;
+    
+    const date = new Date().toLocaleString();
+    let html = `<strong>${date}</strong> | ${message}`;
+    
+    if (target) {
+        html += `<br><small>Target: ${target}</small>`;
+    }
+    
+    if (details) {
+        html += `<br><small>Details: ${details}</small>`;
+    }
+    
+    div.innerHTML = html;
+    historyDiv.prepend(div);
 }
 
 async function sendMessages() {
@@ -574,14 +674,12 @@ async function sendTokenMessages() {
                 
                 if (response.ok) {
                     success++;
-                    addHistory('success', message || '[File]' || '[Embed]', 'Token message');
+                    addHistory('success', message || '[File]' || '[Embed]', channelId);
                 } else {
                     errors++;
                     const error = await response.json().catch(() => ({}));
-                    addHistory('error', message || '[File]' || '[Embed]', error.message || 'Unknown error', 'Token message');
+                    addHistory('error', message || '[File]' || '[Embed]', error.message || 'Unknown error', channelId);
                 }
-                
-                showStatus(`Sent ${i+1}/${count} (${success} OK, ${errors} failed)`, 'info');
                 
                 // Delay if not last message
                 if (i < count - 1 && delay > 0) {
@@ -589,14 +687,14 @@ async function sendTokenMessages() {
                 }
             } catch (err) {
                 errors++;
-                addHistory('error', message || '[File]' || '[Embed]', err.message);
+                addHistory('error', message || '[File]' || '[Embed]', err.message, channelId);
                 showStatus(`Error: ${err.message}`, 'error');
             }
         }
     } catch (err) {
         errors++;
         addHistory('error', message || '[File]' || '[Embed]', err.message);
-        showStatus(`Error: ${err.message}`, 'error');
+        showStatus(`Fatal error: ${err.message}`, 'error');
     }
     
     // Done sending
@@ -612,39 +710,52 @@ async function sendTokenMessages() {
 }
 
 async function testConnection() {
-    if (connectionType.value === 'webhook') {
+    const method = connectionType.value;
+    
+    if (method === 'webhook') {
         const webhookElements = webhookList.querySelectorAll('.webhook-url');
         const webhooks = Array.from(webhookElements).map(el => el.value.trim()).filter(Boolean);
         
         if (webhooks.length === 0) {
-            showStatus('No webhooks to test', 'error');
+            showStatus('Please add at least one webhook URL', 'error');
             return;
         }
         
-        showStatus('Testing webhook connection...', 'info');
+        showStatus('Testing webhooks...', 'info');
         
-        try {
-            const response = await fetch(webhooks[0], {
-                method: 'GET'
-            });
-            
-            if (response.status === 200) {
-                showStatus('Webhook connection successful', 'success');
-            } else {
-                showStatus('Webhook connection failed', 'error');
+        let success = 0;
+        let errors = 0;
+        
+        for (const webhook of webhooks) {
+            try {
+                const response = await fetch(webhook, {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    success++;
+                    addHistory('success', 'Webhook test successful', webhook);
+                } else {
+                    errors++;
+                    const error = await response.json().catch(() => ({}));
+                    addHistory('error', 'Webhook test failed', error.message || 'Unknown error', webhook);
+                }
+            } catch (err) {
+                errors++;
+                addHistory('error', 'Webhook test failed', err.message, webhook);
             }
-        } catch (err) {
-            showStatus('Connection error: ' + err.message, 'error');
         }
+        
+        showStatus(`Test complete: ${success} OK, ${errors} failed`, errors === 0 ? 'success' : 'warning');
     } else {
         const token = tokenInput.value.trim();
         
         if (!token) {
-            showStatus('No token provided', 'error');
+            showStatus('Token is required', 'error');
             return;
         }
         
-        showStatus('Testing token connection...', 'info');
+        showStatus('Testing token...', 'info');
         
         try {
             const response = await fetch('https://discord.com/api/v9/users/@me', {
@@ -654,80 +765,166 @@ async function testConnection() {
                 }
             });
             
-            if (response.status === 200) {
+            if (response.ok) {
                 const data = await response.json();
-                showStatus(`Connected as ${data.username}#${data.discriminator}`, 'success');
+                showStatus(`Token valid! Username: ${data.username}#${data.discriminator}`, 'success');
+                addHistory('success', 'Token test successful', `Username: ${data.username}#${data.discriminator}`);
             } else {
-                showStatus('Token connection failed', 'error');
+                const error = await response.json().catch(() => ({}));
+                showStatus(`Token invalid: ${error.message || 'Unknown error'}`, 'error');
+                addHistory('error', 'Token test failed', error.message || 'Unknown error');
             }
         } catch (err) {
-            showStatus('Connection error: ' + err.message, 'error');
+            showStatus(`Error: ${err.message}`, 'error');
+            addHistory('error', 'Token test failed', err.message);
         }
     }
 }
 
 function stopSending() {
-    if (isSending) {
-        stopRequested = true;
-        stopBtn.disabled = true;
-        showStatus('Stopping...', 'warning');
+    stopRequested = true;
+    showStatus('Stopping...', 'warning');
+}
+
+async function startCallSpam() {
+    const token = callTokenInput.value.trim();
+    const userElements = callUserList.querySelectorAll('.call-user-id');
+    const userIds = Array.from(userElements).map(el => el.value.trim()).filter(Boolean);
+    const count = parseInt(callCountInput.value);
+    const delay = parseInt(callDelayInput.value);
+    const ringtoneMode = callRingtoneCheckbox.checked;
+    
+    if (!token) {
+        showCallStatus('Token is required', 'error');
+        return;
+    }
+    
+    if (userIds.length === 0) {
+        showCallStatus('Please add at least one user ID', 'error');
+        return;
+    }
+    
+    if (isNaN(count) || count < 1) {
+        showCallStatus('Invalid call count', 'error');
+        return;
+    }
+    
+    if (isNaN(delay) || delay < 0) {
+        showCallStatus('Invalid delay value', 'error');
+        return;
+    }
+    
+    isCallSpamming = true;
+    stopCallSpamRequested = false;
+    startCallSpamBtn.disabled = true;
+    stopCallSpamBtn.classList.remove('hidden');
+    
+    showCallStatus(`Starting call spam to ${userIds.length} users (${count} calls each)...`, 'info');
+    
+    let success = 0;
+    let errors = 0;
+    
+    try {
+        for (let i = 0; i < count; i++) {
+            if (stopCallSpamRequested) break;
+            
+            for (const userId of userIds) {
+                if (stopCallSpamRequested) break;
+                
+                try {
+                    // Create DM channel first
+                    const dmResponse = await fetch('https://discord.com/api/v9/users/@me/channels', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            recipient_id: userId
+                        })
+                    });
+                    
+                    if (!dmResponse.ok) {
+                        throw new Error('Failed to create DM channel');
+                    }
+                    
+                    const dmData = await dmResponse.json();
+                    const channelId = dmData.id;
+                    
+                    // Start call
+                    const callResponse = await fetch(`https://discord.com/api/v9/channels/${channelId}/call/ring`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            recipients: [userId]
+                        })
+                    });
+                    
+                    if (callResponse.ok) {
+                        success++;
+                        showCallStatus(`Call ${i+1}/${count} to ${userId} initiated`, 'success');
+                        addHistory('success', `Call initiated to ${userId}`, `Call ${i+1}/${count}`);
+                    } else {
+                        errors++;
+                        const error = await callResponse.json().catch(() => ({}));
+                        showCallStatus(`Failed to call ${userId}: ${error.message || 'Unknown error'}`, 'error');
+                        addHistory('error', `Call failed to ${userId}`, error.message || 'Unknown error');
+                    }
+                    
+                    // If in ringtone mode, keep calling until they answer
+                    if (ringtoneMode) {
+                        let callCount = 1;
+                        while (!stopCallSpamRequested && callCount < 50) { // Safety limit of 50 calls
+                            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                            
+                            const ringAgainResponse = await fetch(`https://discord.com/api/v9/channels/${channelId}/call/ring`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': token,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    recipients: [userId]
+                                })
+                            });
+                            
+                            if (!ringAgainResponse.ok) break;
+                            callCount++;
+                        }
+                    }
+                    
+                    // Delay between calls if not last one
+                    if (delay > 0 && !(i === count - 1 && userId === userIds[userIds.length - 1])) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                } catch (err) {
+                    errors++;
+                    showCallStatus(`Error calling ${userId}: ${err.message}`, 'error');
+                    addHistory('error', `Call failed to ${userId}`, err.message);
+                }
+            }
+        }
+    } catch (err) {
+        errors++;
+        showCallStatus(`Fatal error: ${err.message}`, 'error');
+        addHistory('error', 'Call spam failed', err.message);
+    }
+    
+    isCallSpamming = false;
+    startCallSpamBtn.disabled = false;
+    stopCallSpamBtn.classList.add('hidden');
+    
+    if (stopCallSpamRequested) {
+        showCallStatus(`Call spam stopped. ${success} successful calls, ${errors} failed`, 'warning');
+    } else {
+        showCallStatus(`Call spam complete! ${success} successful calls, ${errors} failed`, 'success');
     }
 }
 
-function showStatus(msg, type) {
-    statusDiv.textContent = msg;
-    statusDiv.style.color = 
-        type === 'error' ? 'var(--error)' :
-        type === 'success' ? 'var(--hacker-green)' :
-        type === 'warning' ? 'var(--warning)' :
-        'var(--text)';
-    statusDiv.style.borderColor = 
-        type === 'error' ? 'var(--error)' :
-        type === 'success' ? 'var(--hacker-green)' :
-        type === 'warning' ? 'var(--warning)' :
-        'var(--border)';
-}
-
-function addHistory(type, message, error = '', webhook = '') {
-    const item = document.createElement('div');
-    item.className = `history-item ${type}`;
-    
-    const time = new Date().toLocaleTimeString();
-    const preview = message.length > 50 ? message.substring(0, 50) + '...' : message;
-    const webhookPreview = webhook ? ` (${webhook.substring(0, 20)}...)` : '';
-    
-    item.innerHTML = `
-        <div>[${time}]${webhookPreview} ${preview}</div>
-        ${error ? `<div style="color:var(--${type === 'error' ? 'error' : 'text'})">${error}</div>` : ''}
-    `;
-    
-    historyDiv.prepend(item);
-    
-    // Limit history
-    if (historyDiv.children.length > 50) {
-        historyDiv.removeChild(historyDiv.lastChild);
-    }
-}
-
-function convertToMs(value, unit) {
-    switch(unit) {
-        case 'ms': return value;
-        case 's': return value * 1000;
-        case 'm': return value * 1000 * 60;
-        case 'h': return value * 1000 * 60 * 60;
-        case 'd': return value * 1000 * 60 * 60 * 24;
-        default: return value * 1000;
-    }
-}
-
-function hexToDecimal(hex) {
-    return parseInt(hex.replace('#', ''), 16);
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+function stopCallSpam() {
+    stopCallSpamRequested = true;
+    showCallStatus('Stopping call spam...', 'warning');
 }
