@@ -1,4 +1,3 @@
-/* Original CSS remains completely unchanged */
 :root {
     --hacker-green: #00ff41;
     --matrix-green: #008f11;
@@ -123,13 +122,13 @@ button:hover {
     box-shadow: 0 0 10px var(--hacker-green);
 }
 
-#stop {
+#stop, #stop-call-spam {
     color: var(--error);
     border-color: var(--error);
     background: rgba(255, 0, 51, 0.1);
 }
 
-#stop:hover {
+#stop:hover, #stop-call-spam:hover {
     background: rgba(255, 0, 51, 0.2);
     box-shadow: 0 0 10px var(--error);
 }
@@ -398,4 +397,31 @@ button:hover {
     max-height: 80px;
     border-radius: 4px;
     margin-left: 10px;
+}
+
+/* Call spammer specific styles */
+#call-user-list {
+    margin-top: 10px;
+}
+
+.call-user-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.call-user-item input {
+    flex: 1;
+}
+
+.call-user-item button {
+    padding: 5px 10px;
+    margin: 0;
+}
+
+#call-spam-section {
+    border: 1px solid var(--border);
+    padding: 15px;
+    margin-top: 15px;
+    background: var(--darker-bg);
 }
